@@ -52,6 +52,17 @@ export interface Homework {
   dueDate: string;
 }
 
+export interface Submission {
+  id: string;
+  homeworkId: string;
+  studentId: string;
+  fileUrl?: string;
+  status: 'Pending' | 'Submitted' | 'Graded';
+  marks?: number;
+  feedback?: string;
+  submittedAt: string;
+}
+
 export interface Resource {
   id: string;
   title: string;

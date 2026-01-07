@@ -151,6 +151,51 @@ export const storageService = {
     if (error) throw error;
   },
 
+  // HOMEWORK
+  getHomeworkBySession: async (sessionId: string): Promise<any[]> => {
+    const { data, error } = await supabase
+      .from('homework')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data.map((d: any) => ({
+      id: d.id,
+      sessionId: d.session_id,
+      title: d.title,
+      description: d.description,
+      fileUrl: d.file_url,
+      dueDate: d.due_date
+    }));
+  },
+
+  createHomework: async (homework: any) => {
+    const { error } = await supabase
+      .from('homework')
+      .insert({
+        session_id: homework.sessionId,
+        title: homework.title,
+        description: homework.description,
+        file_url: homework.fileUrl,
+        due_date: homework.dueDate
+      });
+    if (error) throw error;
+  },
+
+  submitHomework: async (submission: any) => {
+    const { error } = await supabase
+      .from('submissions')
+      .insert({
+        homework_id: submission.homeworkId,
+        student_id: submission.studentId,
+        file_url: submission.fileUrl,
+        status: 'Submitted',
+        submitted_at: new Date().toISOString()
+      });
+    if (error) throw error;
+  },
+
   // NOTIFICATIONS
   getNotifications: async (): Promise<Notification[]> => {
     const { data, error } = await supabase

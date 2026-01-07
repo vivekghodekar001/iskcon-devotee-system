@@ -11,7 +11,6 @@ import {
   Menu,
   X,
   UserPlus,
-  Sparkles,
   Quote
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
@@ -19,15 +18,12 @@ import SessionManagement from './components/SessionManagement';
 import GitaInsights from './components/GitaInsights';
 import StudentRegistration from './components/StudentRegistration';
 import { storageService } from './services/storageService';
-import { getDailyGitaQuote } from './services/geminiService';
 import { Notification, GitaQuote } from './types';
 
 const App: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeQuoteNotification, setActiveQuoteNotification] = useState<GitaQuote | null>(null);
-
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -39,23 +35,6 @@ const App: React.FC = () => {
       }
     };
     loadData();
-
-    // Simulated "Push Notification" after app load
-    const timer = setTimeout(async () => {
-      const quote = await getDailyGitaQuote();
-      if (quote) {
-        setActiveQuoteNotification(quote);
-        addNotification(
-          `Divine Instruction: Ch. ${quote.chapter} Verse ${quote.text}`,
-          quote.translation,
-          'quote'
-        );
-        // Hide notification after 8 seconds
-        setTimeout(() => setActiveQuoteNotification(null), 8000);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timer);
   }, []);
 
   const addNotification = async (title: string, message: string, type: 'quote' | 'system' = 'system') => {
@@ -95,27 +74,6 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="min-h-screen flex bg-transparent overflow-hidden relative font-sans text-slate-900">
-        {/* Divine Push Notification Toast */}
-        {activeQuoteNotification && (
-          <div className="fixed top-20 right-4 z-[100] max-w-sm glass-card rounded-2xl shadow-2xl border-l-4 border-[#0F766E] p-5 animate-in slide-in-from-right-full duration-500">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-teal-50 text-[#0F766E] rounded-xl shrink-0">
-                <Sparkles size={20} />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between">
-                  <h4 className="font-bold text-slate-900 text-sm font-serif">Bhagavad Gita Wisdom</h4>
-                  <button onClick={() => setActiveQuoteNotification(null)} className="text-slate-400">
-                    <X size={14} />
-                  </button>
-                </div>
-                <p className="text-slate-600 text-xs italic mt-1 line-clamp-3">"{activeQuoteNotification.translation}"</p>
-                <p className="text-[#0F766E] text-[10px] font-black uppercase mt-2">Chapter {activeQuoteNotification.chapter}.{activeQuoteNotification.text}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div
