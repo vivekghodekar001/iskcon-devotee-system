@@ -46,30 +46,3 @@ export interface Notification {
   type?: 'quote' | 'system';
 }
 
-export interface InventoryItem {
-  id: string;
-  itemName: string;
-  quantity: number;
-  unit: string;
-  minThreshold: number;
-  category: string;
-  lastUpdated: string;
-}
-
-export interface MealPlan {
-  id: string;
-  date: string;
-  mealType: 'Breakfast' | 'Lunch' | 'Dinner';
-  items: string[];
-  chefName: string;
-}
-
-export interface Transaction {
-  id: string;
-  date: string;
-  type: 'income' | 'expense';
-  category: string;
-  amount: number;
-  description: string;
-  paymentMethod: string;
-}

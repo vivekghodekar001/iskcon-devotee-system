@@ -1,6 +1,5 @@
-
 import { supabase } from '../lib/supabaseClient';
-import { Devotee, Session, Notification, InventoryItem, MealPlan, Transaction } from '../types';
+import { Devotee, Session, Notification } from '../types';
 
 export const storageService = {
   // DEVOTEES
@@ -142,107 +141,11 @@ export const storageService = {
     if (error) throw error;
   },
 
-  // KITCHEN
-  getInventory: async (): Promise<InventoryItem[]> => {
-    const { data, error } = await supabase
-      .from('kitchen_inventory')
-      .select('*')
-      .order('item_name');
-    if (error) throw error;
-    return data.map((d: any) => ({
-      id: d.id,
-      itemName: d.item_name,
-      quantity: d.quantity,
-      unit: d.unit,
-      minThreshold: d.min_threshold,
-      category: d.category,
-      lastUpdated: d.last_updated
-    }));
-  },
-
-  updateInventoryItem: async (item: Partial<InventoryItem> & { id?: string }) => {
-    // If id exists, update. If not, insert.
-    const dbItem = {
-      item_name: item.itemName,
-      quantity: item.quantity,
-      unit: item.unit,
-      min_threshold: item.minThreshold,
-      category: item.category,
-      last_updated: new Date().toISOString()
-    };
-
-    if (item.id) {
-      const { error } = await supabase
-        .from('kitchen_inventory')
-        .update(dbItem)
-        .eq('id', item.id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from('kitchen_inventory').insert(dbItem);
-      if (error) throw error;
-    }
-  },
-
-  deleteInventoryItem: async (id: string) => {
-    const { error } = await supabase.from('kitchen_inventory').delete().eq('id', id);
-    if (error) throw error;
-  },
-
-  getMealPlans: async (): Promise<MealPlan[]> => {
-    const { data, error } = await supabase
-      .from('meal_plans')
-      .select('*')
-      .order('date', { ascending: true });
-    if (error) throw error;
-    return data.map((d: any) => ({
-      id: d.id,
-      date: d.date,
-      mealType: d.meal_type,
-      items: d.items,
-      chefName: d.chef_name
-    }));
-  },
-
-  saveMealPlan: async (plan: MealPlan) => {
-    const dbPlan = {
-      date: plan.date,
-      meal_type: plan.mealType,
-      items: plan.items,
-      chef_name: plan.chefName
-    };
-    const { error } = await supabase.from('meal_plans').insert(dbPlan);
-    if (error) throw error;
-  },
-
-  // TREASURY
-  getTransactions: async (): Promise<Transaction[]> => {
-    const { data, error } = await supabase
-      .from('account_transactions')
-      .select('*')
-      .order('date', { ascending: false });
-    if (error) throw error;
-    return data.map((d: any) => ({
-      id: d.id,
-      date: d.date,
-      type: d.type,
-      category: d.category,
-      amount: d.amount,
-      description: d.description,
-      paymentMethod: d.payment_method
-    }));
-  },
-
-  addTransaction: async (tx: Transaction) => {
+  markAllNotificationsRead: async () => {
     const { error } = await supabase
-      .from('account_transactions')
-      .insert({
-        date: tx.date,
-        type: tx.type,
-        category: tx.category,
-        amount: tx.amount,
-        description: tx.description,
-        payment_method: tx.paymentMethod
-      });
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('is_read', false);
     if (error) throw error;
   }
 };

@@ -12,16 +12,12 @@ import {
   X,
   UserPlus,
   Sparkles,
-  Quote,
-  Utensils,
-  Wallet
+  Quote
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import DevoteeManagement from './components/DevoteeManagement';
 import SessionManagement from './components/SessionManagement';
 import GitaInsights from './components/GitaInsights';
-import KitchenManagement from './components/KitchenManagement';
-import TempleTreasury from './components/TempleTreasury';
 import { storageService } from './services/storageService';
 import { getDailyGitaQuote } from './services/geminiService';
 import { Notification, GitaQuote } from './types';
@@ -150,8 +146,6 @@ const App: React.FC = () => {
               <SidebarLink to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" />
               <SidebarLink to="/devotees" icon={<Users size={20} />} label="Devotees" />
               <SidebarLink to="/sessions" icon={<Calendar size={20} />} label="Sessions" />
-              <SidebarLink to="/kitchen" icon={<Utensils size={20} />} label="Kitchen & Prasadam" />
-              <SidebarLink to="/treasury" icon={<Wallet size={20} />} label="Temple Treasury" />
               <SidebarLink to="/gita" icon={<BookOpen size={20} />} label="Gita Wisdom" />
             </nav>
 
@@ -233,8 +227,6 @@ const App: React.FC = () => {
               <Route path="/devotees" element={<DevoteeManagement />} />
               <Route path="/devotees/new" element={<DevoteeManagement isNew />} />
               <Route path="/sessions" element={<SessionManagement addNotification={addNotification} />} />
-              <Route path="/kitchen" element={<KitchenManagement />} />
-              <Route path="/treasury" element={<TempleTreasury />} />
               <Route path="/gita" element={<GitaInsights />} />
             </Routes>
           </div>
