@@ -1,40 +1,64 @@
+export type UserRole = 'student' | 'admin' | 'mentor';
+export type StudentCategory = 'Favourite' | 'Regular' | 'Sankalpa' | 'Guest' | 'Volunteer' | 'Advanced seeker';
+export type SessionStatus = 'Upcoming' | 'Ongoing' | 'Completed';
+export type ResourceType = 'book' | 'photo' | 'video' | 'lecture';
 
-export enum InitiationStatus {
-  SHELTER = 'Shelter',
-  ASPIRANT = 'Aspirant',
-  FIRST_INITIATED = 'First Initiated',
-  SECOND_INITIATED = 'Second Initiated',
-  UNINITIATED = 'Uninitiated'
-}
-
-export interface Devotee {
+export interface UserProfile {
   id: string;
   name: string;
   spiritualName?: string;
   email: string;
   phone: string;
-  photo?: string;
-  status: InitiationStatus;
-  joinedAt: string;
-  hobbies?: string;
-  dailyMalas: number;
+  photoUrl?: string;
+
+  // Personal
+  dob?: string;
+  nativePlace?: string;
+  currentAddress?: string;
+  branch?: string;
+  yearOfStudy?: string;
+
+  // Spiritual / System
+  role: UserRole;
+  category: StudentCategory;
+  hobbies?: string[];
+  skills?: string[];
+  introVideoUrl?: string;
+  mentorId?: string;
+  goals?: string;
+  interests?: string[];
+
+  createdAt: string;
 }
 
 export interface Session {
   id: string;
   title: string;
+  description?: string;
   date: string;
   location: string;
   facilitator: string;
+  type: 'Regular' | 'Camp' | 'Event' | 'Special';
+  status: SessionStatus;
   attendeeIds: string[];
 }
 
-export interface GitaQuote {
-  verse: string;
-  translation: string;
-  purport: string;
-  chapter: number;
-  text: number;
+export interface Homework {
+  id: string;
+  sessionId: string;
+  title: string;
+  description: string;
+  fileUrl?: string;
+  dueDate: string;
+}
+
+export interface Resource {
+  id: string;
+  title: string;
+  type: ResourceType;
+  category: string;
+  url: string;
+  thumbnailUrl?: string;
 }
 
 export interface Notification {
@@ -46,3 +70,10 @@ export interface Notification {
   type?: 'quote' | 'system';
 }
 
+export interface GitaQuote {
+  verse: string;
+  translation: string;
+  purport: string;
+  chapter: number;
+  text: number;
+}

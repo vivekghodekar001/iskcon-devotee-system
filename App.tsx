@@ -15,9 +15,9 @@ import {
   Quote
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
-import DevoteeManagement from './components/DevoteeManagement';
 import SessionManagement from './components/SessionManagement';
 import GitaInsights from './components/GitaInsights';
+import StudentRegistration from './components/StudentRegistration';
 import { storageService } from './services/storageService';
 import { getDailyGitaQuote } from './services/geminiService';
 import { Notification, GitaQuote } from './types';
@@ -144,9 +144,9 @@ const App: React.FC = () => {
 
             <nav className="flex-1 px-4 space-y-1 mt-4">
               <SidebarLink to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" />
-              <SidebarLink to="/devotees" icon={<Users size={20} />} label="Devotees" />
               <SidebarLink to="/sessions" icon={<Calendar size={20} />} label="Sessions" />
               <SidebarLink to="/gita" icon={<BookOpen size={20} />} label="Gita Wisdom" />
+              <SidebarLink to="/register" icon={<UserPlus size={20} />} label="Join" />
             </nav>
 
             <div className="p-4 border-t border-teal-500/30">
@@ -224,8 +224,7 @@ const App: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
             <Routes>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/devotees" element={<DevoteeManagement />} />
-              <Route path="/devotees/new" element={<DevoteeManagement isNew />} />
+              <Route path="/register" element={<StudentRegistration />} />
               <Route path="/sessions" element={<SessionManagement addNotification={addNotification} />} />
               <Route path="/gita" element={<GitaInsights />} />
             </Routes>

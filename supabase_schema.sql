@@ -1,31 +1,41 @@
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
--- Devotees Table
-create table if not exists devotees (
+
+
+-- Student Profiles (Extended)
+create table if not exists profiles (
   id uuid primary key default uuid_generate_v4(),
+  user_id uuid, -- Link to auth.users if we use Supabase Auth later
   name text not null,
   spiritual_name text,
   email text,
   phone text,
-  photo text,
-  status text check (status in ('Shelter', 'Aspirant', 'First Initiated', 'Second Initiated', 'Uninitiated')),
-  joined_at timestamp with time zone default now(),
-  hobbies text,
-  daily_malas int default 0
+  photo_url text,
+  
+  -- Personal Info
+  dob date,
+  native_place text,
+  current_address text,
+  branch text, -- e.g. Pune, Mumbai
+  year_of_study text, -- e.g. FE, SE, TE, BE
+  
+  -- Spiritual Info
+  intro_video_url text,
+  hobbies text[],
+  skills text[],
+  goals text,
+  interests text[],
+  
+  -- System Info
+  role text default 'student' check (role in ('student', 'admin', 'mentor')),
+  category text default 'Regular' check (category in ('Favourite', 'Regular', 'Sankalpa', 'Guest', 'Volunteer', 'Advanced seeker')),
+  mentor_id uuid references profiles(id),
+  
+  created_at timestamp with time zone default now()
 );
 
--- Sessions Table
-create table if not exists sessions (
-  id uuid primary key default uuid_generate_v4(),
-  title text not null,
-  date timestamp with time zone not null,
-  location text,
-  facilitator text,
-  attendee_ids text[] default '{}'
-);
-
--- Notifications Table
+-- Notifications Table (Keep existing)
 create table if not exists notifications (
   id uuid primary key default uuid_generate_v4(),
   title text not null,
@@ -35,42 +45,68 @@ create table if not exists notifications (
   type text check (type in ('quote', 'system'))
 );
 
--- Kitchen Inventory Table
-create table if not exists kitchen_inventory (
+-- Sessions Table (Updated for ERP)
+create table if not exists sessions (
   id uuid primary key default uuid_generate_v4(),
-  item_name text not null,
-  quantity float default 0,
-  unit text not null,
-  min_threshold float default 0,
-  category text,
-  last_updated timestamp with time zone default now()
-);
-
--- Meal Plans Table
-create table if not exists meal_plans (
-  id uuid primary key default uuid_generate_v4(),
-  date date not null,
-  meal_type text check (meal_type in ('Breakfast', 'Lunch', 'Dinner')),
-  items text[] default '{}',
-  chef_name text
-);
-
--- Account Transactions Table (Treasury)
-create table if not exists account_transactions (
-  id uuid primary key default uuid_generate_v4(),
-  date timestamp with time zone default now(),
-  type text check (type in ('income', 'expense')),
-  category text,
-  amount float not null,
+  title text not null,
   description text,
-  payment_method text
+  date timestamp with time zone not null,
+  location text,
+  facilitator text,
+  type text default 'Regular' check (type in ('Regular', 'Camp', 'Event', 'Special')),
+  status text default 'Upcoming' check (status in ('Upcoming', 'Ongoing', 'Completed')),
+  attendee_ids text[] default '{}' 
 );
 
--- SAFETY: Disable RLS on all tables to prevent "Authorization Failed" errors for now.
--- You can enable these later when you have proper auth policies set up.
-alter table devotees disable row level security;
+-- Homework & Assignments
+create table if not exists homework (
+  id uuid primary key default uuid_generate_v4(),
+  session_id uuid references sessions(id),
+  title text not null,
+  description text,
+  file_url text, -- PDF/Doc link
+  due_date timestamp with time zone,
+  created_at timestamp with time zone default now()
+);
+
+-- Student Submissions
+create table if not exists submissions (
+  id uuid primary key default uuid_generate_v4(),
+  homework_id uuid references homework(id),
+  student_id uuid references profiles(id),
+  file_url text,
+  status text default 'Pending' check (status in ('Pending', 'Submitted', 'Graded')),
+  marks int,
+  feedback text,
+  submitted_at timestamp with time zone default now()
+);
+
+-- Resources / Gallery
+create table if not exists resources (
+  id uuid primary key default uuid_generate_v4(),
+  title text not null,
+  type text check (type in ('book', 'photo', 'video', 'lecture')),
+  category text, -- e.g. 'Scripture', 'Event 2024'
+  url text not null,
+  thumbnail_url text,
+  created_at timestamp with time zone default now()
+);
+
+-- Mentorship Requests
+create table if not exists mentorship_requests (
+  id uuid primary key default uuid_generate_v4(),
+  student_id uuid references profiles(id),
+  mentor_id uuid references profiles(id),
+  status text default 'Pending' check (status in ('Pending', 'Accepted', 'Rejected')),
+  message text,
+  created_at timestamp with time zone default now()
+);
+
+-- SAFETY: Disable RLS for now to avoid permission issues during dev
+alter table profiles disable row level security;
 alter table sessions disable row level security;
 alter table notifications disable row level security;
-alter table kitchen_inventory disable row level security;
-alter table meal_plans disable row level security;
-alter table account_transactions disable row level security;
+alter table homework disable row level security;
+alter table submissions disable row level security;
+alter table resources disable row level security;
+alter table mentorship_requests disable row level security;
