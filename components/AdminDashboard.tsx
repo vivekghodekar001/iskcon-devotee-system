@@ -69,7 +69,7 @@ const AdminDashboard: React.FC = () => {
     ];
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-in">
             <header>
                 <h2 className="text-3xl font-bold font-serif text-[#0F766E]">Temple Admin Dashboard</h2>
                 <p className="text-slate-500">Overview of community growth and engagement.</p>
@@ -155,7 +155,7 @@ const AdminDashboard: React.FC = () => {
 };
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: number, trend: string, color: string }> = ({ icon, label, value, trend, color }) => (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+    <div className="glass-card bg-white/60 p-6 rounded-2xl">
         <div className="flex justify-between items-start mb-4">
             <div className={`p-3 rounded-xl ${color}`}>
                 {icon}
