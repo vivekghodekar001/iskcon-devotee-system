@@ -98,12 +98,12 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen flex bg-[#FFF9F0] overflow-hidden relative font-sans text-slate-900">
+      <div className="min-h-screen flex bg-transparent overflow-hidden relative font-sans text-slate-900">
         {/* Divine Push Notification Toast */}
         {activeQuoteNotification && (
-          <div className="fixed top-20 right-4 z-[100] max-w-sm bg-white rounded-2xl shadow-2xl border-l-4 border-[#FF9933] p-5 animate-in slide-in-from-right-full duration-500">
+          <div className="fixed top-20 right-4 z-[100] max-w-sm glass-card rounded-2xl shadow-2xl border-l-4 border-[#0F766E] p-5 animate-in slide-in-from-right-full duration-500">
             <div className="flex items-start gap-4">
-              <div className="p-2 bg-orange-100 text-[#FF9933] rounded-xl shrink-0">
+              <div className="p-2 bg-teal-50 text-[#0F766E] rounded-xl shrink-0">
                 <Sparkles size={20} />
               </div>
               <div className="flex-1">
@@ -114,7 +114,7 @@ const App: React.FC = () => {
                   </button>
                 </div>
                 <p className="text-slate-600 text-xs italic mt-1 line-clamp-3">"{activeQuoteNotification.translation}"</p>
-                <p className="text-[#FF9933] text-[10px] font-black uppercase mt-2">Chapter {activeQuoteNotification.chapter}.{activeQuoteNotification.text}</p>
+                <p className="text-[#0F766E] text-[10px] font-black uppercase mt-2">Chapter {activeQuoteNotification.chapter}.{activeQuoteNotification.text}</p>
               </div>
             </div>
           </div>
@@ -123,25 +123,25 @@ const App: React.FC = () => {
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* Sidebar */}
         <aside className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-[#FF9933] text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl
+          fixed inset-y-0 left-0 z-50 w-64 bg-[#0F766E] text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl bg-gradient-to-b from-[#0F766E] to-[#115E59]
         `}>
           <div className="flex flex-col h-full">
             <div className="p-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#FF9933] shadow-lg">
+                <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white shadow-lg border border-white/20">
                   <BookOpen size={24} />
                 </div>
                 <h1 className="text-xl font-bold tracking-tight font-serif">ISKCON Portal</h1>
               </div>
-              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
+              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/80 hover:text-white">
                 <X size={24} />
               </button>
             </div>
@@ -155,15 +155,15 @@ const App: React.FC = () => {
               <SidebarLink to="/gita" icon={<BookOpen size={20} />} label="Gita Wisdom" />
             </nav>
 
-            <div className="p-4 border-t border-orange-400/50">
+            <div className="p-4 border-t border-teal-500/30">
               <div className="flex items-center gap-3 px-2 py-3">
-                <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center font-bold text-[#FF9933]">A</div>
+                <div className="w-8 h-8 rounded-full bg-teal-800/50 flex items-center justify-center font-bold text-teal-100 border border-teal-500/30">A</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">Temple Admin</p>
-                  <p className="text-xs text-orange-100 truncate">admin@iskcon.org</p>
+                  <p className="text-sm font-medium truncate text-teal-50">Temple Admin</p>
+                  <p className="text-xs text-teal-200/70 truncate">admin@iskcon.org</p>
                 </div>
               </div>
-              <button className="flex items-center gap-3 px-2 py-3 w-full text-left text-orange-100 hover:text-white hover:bg-orange-600 rounded-lg transition-colors">
+              <button className="flex items-center gap-3 px-2 py-3 w-full text-left text-teal-200/70 hover:text-white hover:bg-teal-800/50 rounded-lg transition-colors">
                 <LogOut size={20} />
                 <span className="text-sm font-medium">Logout</span>
               </button>
