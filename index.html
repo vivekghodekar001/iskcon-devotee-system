@@ -17,6 +17,7 @@
       color: #0f172a;
       min-height: 100vh;
       background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
     }
 
     h1,
@@ -27,56 +28,78 @@
     h6 {
       font-family: 'Playfair Display', serif;
       color: #0f766e;
-      /* Deep Teal */
     }
 
-    /* Krishna's Flute & Peacock Theme */
+    /* Glassmorphism & Cards */
     .glass-card {
-      background: rgba(255, 255, 255, 0.65);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 8px 32px 0 rgba(15, 118, 110, 0.1);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .gradient-text {
-      /* Peacock Feather Gradient */
-      background: linear-gradient(135deg, #0d9488 0%, #3b82f6 50%, #d946ef 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .glass-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(15, 118, 110, 0.1);
     }
 
+    /* Divine Buttons */
     .btn-divine {
-      /* Peacock Gradient */
-      background: linear-gradient(135deg, #0d9488 0%, #2563eb 100%);
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
       color: white;
       border: none;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(13, 148, 136, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3);
+      position: relative;
+      overflow: hidden;
     }
 
     .btn-divine:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(13, 148, 136, 0.4);
+      box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.4);
+      filter: brightness(110%);
     }
 
-    /* Scrollbar - Peacock Teal */
+    .btn-divine:active {
+      transform: translateY(0);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    /* Scrollbar */
     ::-webkit-scrollbar {
-      width: 8px;
+      width: 6px;
+      height: 6px;
     }
 
     ::-webkit-scrollbar-track {
-      background: rgba(13, 148, 136, 0.05);
+      background: transparent;
     }
 
     ::-webkit-scrollbar-thumb {
       background: rgba(13, 148, 136, 0.2);
-      border-radius: 20px;
+      border-radius: 99px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(13, 148, 136, 0.5);
+      background: rgba(13, 148, 136, 0.4);
     }
   </style>
   <script type="importmap">
