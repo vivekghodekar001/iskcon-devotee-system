@@ -52,6 +52,47 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  /* App State */
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (session) {
+      const loadData = async () => {
+        try {
+          const loaded = await storageService.getNotifications();
+          setNotifications(loaded);
+          setUnreadCount(loaded.filter(n => !n.isRead).length);
+        } catch (error) {
+          console.error("Failed to load notifications", error);
+        }
+      };
+      loadData();
+    }
+  }, [session]);
+
+  const addNotification = async (title: string, message: string, type: 'quote' | 'system' = 'system') => {
+    const newNotif: Notification = {
+      id: crypto.randomUUID(),
+      title,
+      message,
+      timestamp: new Date(),
+      isRead: false,
+      type
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+    setUnreadCount(prev => prev + 1);
+    try { await storageService.createNotification(newNotif); } catch (error) { console.error(error); }
+  };
+
+  const clearNotifications = async () => {
+    const updated = notifications.map(n => ({ ...n, isRead: true }));
+    setNotifications(updated);
+    setUnreadCount(0);
+    try { await storageService.markAllNotificationsRead(); } catch (error) { console.error(error); }
+  };
+
   // Simple loading splash
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-[#FFF9F0] text-[#0F766E] font-serif text-xl animate-pulse">Loading ISKCON Portal...</div>;
