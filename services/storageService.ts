@@ -222,6 +222,36 @@ export const storageService = {
     if (error) throw error;
   },
 
+  // RESOURCES (Digital Library)
+  getResources: async (): Promise<any[]> => {
+    const { data, error } = await supabase
+      .from('resources')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map((d: any) => ({
+      id: d.id,
+      title: d.title,
+      type: d.type,
+      category: d.category,
+      url: d.url,
+      thumbnailUrl: d.thumbnail_url
+    }));
+  },
+
+  createResource: async (resource: any) => {
+    const { error } = await supabase
+      .from('resources')
+      .insert({
+        title: resource.title,
+        type: resource.type,
+        category: resource.category,
+        url: resource.url,
+        thumbnail_url: resource.thumbnailUrl
+      });
+    if (error) throw error;
+  },
+
   // NOTIFICATIONS
   getNotifications: async (): Promise<Notification[]> => {
     const { data, error } = await supabase
