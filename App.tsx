@@ -27,57 +27,46 @@ import MentorshipProgram from './components/MentorshipProgram';
 import StudentRegistration from './components/StudentRegistration';
 import { storageService } from './services/storageService';
 import { Notification, GitaQuote } from './types';
+import Login from './components/Login';
+import { supabase } from './lib/supabaseClient';
 
 const App: React.FC = () => {
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  /* Auth State */
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const loaded = await storageService.getNotifications();
-        setNotifications(loaded);
-        setUnreadCount(loaded.filter(n => !n.isRead).length);
-      } catch (error) {
-        console.error("Failed to load notifications", error);
-      }
-    };
-    loadData();
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Listen for changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const addNotification = async (title: string, message: string, type: 'quote' | 'system' = 'system') => {
-    const newNotif: Notification = {
-      id: crypto.randomUUID(), // Use standard UUID if available, or keep relying on whatever
-      title,
-      message,
-      timestamp: new Date(),
-      isRead: false,
-      type
-    };
+  // Simple loading splash
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#FFF9F0] text-[#0F766E] font-serif text-xl animate-pulse">Loading ISKCON Portal...</div>;
+  }
 
-    // Optimistic UI update
-    setNotifications(prev => [newNotif, ...prev]);
-    setUnreadCount(prev => prev + 1);
-
-    try {
-      await storageService.createNotification(newNotif);
-    } catch (error) {
-      console.error("Failed to save notification", error);
-    }
-  };
-
-  const clearNotifications = async () => {
-    // Optimistic UI update
-    const updated = notifications.map(n => ({ ...n, isRead: true }));
-    setNotifications(updated);
-    setUnreadCount(0);
-
-    try {
-      await storageService.markAllNotificationsRead();
-    } catch (error) {
-      console.error("Failed to mark notifications read", error);
-    }
-  };
+  // Auth Guard
+  if (!session) {
+    return (
+      <Router>
+        <Routes>
+          <Route path="*" element={<Login />} />
+        </Routes>
+      </Router>
+    );
+  }
 
   return (
     <Router>
@@ -121,13 +110,18 @@ const App: React.FC = () => {
 
             <div className="p-4 border-t border-teal-500/30">
               <div className="flex items-center gap-3 px-2 py-3">
-                <div className="w-8 h-8 rounded-full bg-teal-800/50 flex items-center justify-center font-bold text-teal-100 border border-teal-500/30">A</div>
+                <div className="w-8 h-8 rounded-full bg-teal-800/50 flex items-center justify-center font-bold text-teal-100 border border-teal-500/30">
+                  {session.user.email?.[0].toUpperCase()}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate text-teal-50">Temple Admin</p>
-                  <p className="text-xs text-teal-200/70 truncate">admin@iskcon.org</p>
+                  <p className="text-sm font-medium truncate text-teal-50">Devotee</p>
+                  <p className="text-xs text-teal-200/70 truncate">{session.user.email}</p>
                 </div>
               </div>
-              <button className="flex items-center gap-3 px-2 py-3 w-full text-left text-teal-200/70 hover:text-white hover:bg-teal-800/50 rounded-lg transition-colors">
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="flex items-center gap-3 px-2 py-3 w-full text-left text-teal-200/70 hover:text-white hover:bg-teal-800/50 rounded-lg transition-colors"
+              >
                 <LogOut size={20} />
                 <span className="text-sm font-medium">Logout</span>
               </button>
