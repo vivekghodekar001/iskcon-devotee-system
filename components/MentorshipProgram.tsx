@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Phone, MapPin, Send, CheckCircle, Search } from 'lucide-react';
+import { User, Phone, MapPin, Send, Search, Camera, Sparkles, Plus } from 'lucide-react';
 import { storageService } from '../services/storageService';
 
 interface Mentor {
@@ -25,11 +25,11 @@ const MentorshipProgram: React.FC = () => {
         spiritualName: '',
         phone: '',
         branch: '',
-        photoUrl: '',
+        photoUrl: '', // Base64 string from capture
         email: ''
     });
 
-    // Mock current user ID for demo - in real app would come from AuthContext
+    // Mock current user ID for demo
     const currentUserId = 'demo-student-id';
 
     useEffect(() => {
@@ -81,73 +81,159 @@ const MentorshipProgram: React.FC = () => {
     );
 
     return (
-        <div className="h-[calc(100vh-100px)] flex flex-col gap-6">
-            <div className="flex justify-between items-center">
+        <div className="h-[calc(100vh-100px)] flex flex-col gap-6 relative">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900 font-serif flex items-center gap-2">
                         <User className="text-[#0F766E]" /> Mentorship Program
                     </h2>
                     <p className="text-slate-500 text-sm">Connect with senior devotees for spiritual guidance.</p>
                 </div>
+                {/* Desktop/Tablet Button */}
                 <button
                     onClick={() => setShowAddForm(true)}
-                    className="btn-divine px-4 py-2 rounded-xl flex items-center gap-2 font-medium"
+                    className="hidden sm:flex btn-divine px-4 py-2 rounded-xl items-center gap-2 font-medium shrink-0"
                 >
-                    <User size={18} /> Add Mentor
+                    <Plus size={18} /> Add Mentor
                 </button>
             </div>
+
+            {/* Mobile Floating Action Button (FAB) ensuring visibility */}
+            <button
+                onClick={() => setShowAddForm(true)}
+                className="sm:hidden fixed bottom-6 right-6 z-50 btn-divine w-14 h-14 rounded-full flex items-center justify-center shadow-lg transform transition-transform active:scale-95"
+            >
+                <Plus size={24} />
+            </button>
 
             {/* Add Mentor Modal */}
             {showAddForm && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-start mb-4">
-                            <h4 className="font-bold text-[#0F766E]">Add New Mentor</h4>
-                            <button onClick={() => setShowAddForm(false)}><span className="text-slate-400">✕</span></button>
+                            <h4 className="font-bold text-[#0F766E] text-lg">Add New Mentor</h4>
+                            <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-slate-100 rounded-full"><span className="text-slate-400 text-xl">✕</span></button>
                         </div>
+
                         <form onSubmit={handleAddMentor} className="space-y-4">
-                            <input
-                                required
-                                placeholder="Legal Name"
-                                className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
-                                value={newMentor.name}
-                                onChange={e => setNewMentor({ ...newMentor, name: e.target.value })}
-                            />
-                            <input
-                                placeholder="Spiritual Name (e.g. Krishna Das)"
-                                className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
-                                value={newMentor.spiritualName}
-                                onChange={e => setNewMentor({ ...newMentor, spiritualName: e.target.value })}
-                            />
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Photo Capture Section - Matching Student Registration */}
+                            <div className="bg-slate-50 p-4 rounded-xl space-y-3">
+                                <label className="block text-sm font-medium text-slate-700">Profile Photo</label>
+                                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                                    {/* Preview */}
+                                    <div className="relative w-24 h-24 shrink-0 mx-auto sm:mx-0">
+                                        <div className="w-full h-full rounded-full bg-white border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
+                                            {newMentor.photoUrl ? (
+                                                <img src={newMentor.photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User size={32} className="text-slate-300" />
+                                            )}
+                                        </div>
+                                        {newMentor.photoUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setNewMentor(p => ({ ...p, photoUrl: '' }))}
+                                                className="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 shadow-sm hover:bg-red-200"
+                                            >
+                                                <span className="sr-only">Remove</span>
+                                                <User size={12} className="rotate-45" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Controls */}
+                                    <div className="flex-1 w-full grid grid-cols-2 gap-2">
+                                        <label className="cursor-pointer bg-white border border-slate-200 hover:border-[#0F766E] text-slate-700 hover:text-[#0F766E] p-3 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-xs font-medium shadow-sm text-center h-20">
+                                            <Camera size={20} />
+                                            <span>Take Photo</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                capture="user"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        if (file.size > 2 * 1024 * 1024) {
+                                                            alert("File is too large! Please upload under 2MB.");
+                                                            return;
+                                                        }
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            setNewMentor(prev => ({ ...prev, photoUrl: reader.result as string }));
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+
+                                        <label className="cursor-pointer bg-[#0F766E]/5 border border-[#0F766E]/20 hover:bg-[#0F766E]/10 text-[#0F766E] p-3 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-xs font-medium text-center h-20">
+                                            <Sparkles size={20} />
+                                            <span>Upload</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        if (file.size > 2 * 1024 * 1024) {
+                                                            alert("File is too large! Please upload under 2MB.");
+                                                            return;
+                                                        }
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            setNewMentor(prev => ({ ...prev, photoUrl: reader.result as string }));
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
                                 <input
                                     required
-                                    placeholder="Phone Number"
-                                    className="w-full px-4 py-2 rounded-xl border-slate-200"
-                                    value={newMentor.phone}
-                                    onChange={e => setNewMentor({ ...newMentor, phone: e.target.value })}
+                                    placeholder="Legal Name"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
+                                    value={newMentor.name}
+                                    onChange={e => setNewMentor({ ...newMentor, name: e.target.value })}
                                 />
                                 <input
-                                    placeholder="Branch / Temple"
-                                    className="w-full px-4 py-2 rounded-xl border-slate-200"
-                                    value={newMentor.branch}
-                                    onChange={e => setNewMentor({ ...newMentor, branch: e.target.value })}
+                                    placeholder="Spiritual Name (e.g. Krishna Das)"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
+                                    value={newMentor.spiritualName}
+                                    onChange={e => setNewMentor({ ...newMentor, spiritualName: e.target.value })}
+                                />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <input
+                                        required
+                                        placeholder="Phone Number"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
+                                        value={newMentor.phone}
+                                        onChange={e => setNewMentor({ ...newMentor, phone: e.target.value })}
+                                    />
+                                    <input
+                                        placeholder="Branch / Temple"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
+                                        value={newMentor.branch}
+                                        onChange={e => setNewMentor({ ...newMentor, branch: e.target.value })}
+                                    />
+                                </div>
+                                <input
+                                    placeholder="Email (Optional)"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
+                                    value={newMentor.email}
+                                    onChange={e => setNewMentor({ ...newMentor, email: e.target.value })}
                                 />
                             </div>
-                            <input
-                                placeholder="Photo URL (Optional)"
-                                className="w-full px-4 py-2 rounded-xl border-slate-200"
-                                value={newMentor.photoUrl}
-                                onChange={e => setNewMentor({ ...newMentor, photoUrl: e.target.value })}
-                            />
-                            <input
-                                placeholder="Email (Optional but recommended)"
-                                className="w-full px-4 py-2 rounded-xl border-slate-200"
-                                value={newMentor.email}
-                                onChange={e => setNewMentor({ ...newMentor, email: e.target.value })}
-                            />
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
+                                <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-lg font-medium">Cancel</button>
                                 <button type="submit" className="btn-divine px-6 py-2 rounded-lg font-medium">Add Mentor</button>
                             </div>
                         </form>
