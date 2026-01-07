@@ -89,18 +89,86 @@ const StudentRegistration: React.FC = () => {
                                 <InputGroup label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} />
 
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Profile Photo URL</label>
-                                    <div className="flex gap-4">
-                                        <input
-                                            type="text"
-                                            name="photoUrl"
-                                            value={formData.photoUrl || ''}
-                                            onChange={handleChange}
-                                            placeholder="https://..."
-                                            className="flex-1 rounded-xl border-slate-200 focus:border-[#0F766E] focus:ring-[#0F766E]"
-                                        />
-                                        <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 border border-slate-200">
-                                            {formData.photoUrl ? <img src={formData.photoUrl} className="w-full h-full object-cover rounded-lg" /> : <Camera size={20} />}
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Profile Photo</label>
+                                    <div className="flex flex-col sm:flex-row gap-6 items-start">
+                                        {/* Photo Preview */}
+                                        <div className="relative group w-32 h-32 shrink-0">
+                                            <div className="w-full h-full rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
+                                                {formData.photoUrl ? (
+                                                    <img src={formData.photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User size={40} className="text-slate-300" />
+                                                )}
+                                            </div>
+                                            {formData.photoUrl && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData(p => ({ ...p, photoUrl: '' }))}
+                                                    className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 shadow-sm hover:bg-red-200"
+                                                >
+                                                    <span className="sr-only">Remove</span>
+                                                    <User size={14} className="rotate-45" /> {/* Using X icon would be better but keeping icons consistent */}
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Upload Controls */}
+                                        <div className="flex-1 space-y-4">
+                                            <div className="flex flex-wrap gap-3">
+                                                <label className="flex-1 min-w-[140px] cursor-pointer bg-white border border-slate-200 hover:border-[#0F766E] text-slate-700 hover:text-[#0F766E] px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-all font-medium shadow-sm">
+                                                    <Camera size={20} />
+                                                    <span>Take Photo</span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        capture="user"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                // Max size check (e.g. 2MB)
+                                                                if (file.size > 2 * 1024 * 1024) {
+                                                                    alert("File is too large! Please upload under 2MB.");
+                                                                    return;
+                                                                }
+                                                                const reader = new FileReader();
+                                                                reader.onloadend = () => {
+                                                                    setFormData(prev => ({ ...prev, photoUrl: reader.result as string }));
+                                                                };
+                                                                reader.readAsDataURL(file);
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+
+                                                <label className="flex-1 min-w-[140px] cursor-pointer bg-[#0F766E]/5 border border-[#0F766E]/20 hover:bg-[#0F766E]/10 text-[#0F766E] px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-all font-medium">
+                                                    <Sparkles size={20} />
+                                                    <span>Upload File</span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                if (file.size > 2 * 1024 * 1024) {
+                                                                    alert("File is too large! Please upload under 2MB.");
+                                                                    return;
+                                                                }
+                                                                const reader = new FileReader();
+                                                                reader.onloadend = () => {
+                                                                    setFormData(prev => ({ ...prev, photoUrl: reader.result as string }));
+                                                                };
+                                                                reader.readAsDataURL(file);
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+                                            <p className="text-xs text-slate-400">
+                                                Supports JPEG, PNG. Max 2MB.
+                                                <br />On mobile, "Take Photo" opens your camera directly.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
