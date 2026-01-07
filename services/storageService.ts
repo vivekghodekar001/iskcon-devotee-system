@@ -252,6 +252,37 @@ export const storageService = {
     if (error) throw error;
   },
 
+  // MENTORSHIP
+  getMentors: async (): Promise<any[]> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'mentor')
+      .order('name');
+
+    if (error) throw error;
+    return data.map((d: any) => ({
+      id: d.id,
+      name: d.name,
+      spiritualName: d.spiritual_name,
+      photoUrl: d.photo_url,
+      phone: d.phone,
+      branch: d.branch
+    }));
+  },
+
+  createMentorshipRequest: async (studentId: string, mentorId: string, message: string) => {
+    const { error } = await supabase
+      .from('mentorship_requests')
+      .insert({
+        student_id: studentId,
+        mentor_id: mentorId,
+        message,
+        status: 'Pending'
+      });
+    if (error) throw error;
+  },
+
   // NOTIFICATIONS
   getNotifications: async (): Promise<Notification[]> => {
     const { data, error } = await supabase

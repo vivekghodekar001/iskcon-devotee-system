@@ -14,7 +14,8 @@ import {
   Quote,
   FileText,
   BrainCircuit,
-  Library
+  Library,
+  Users2
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import SessionManagement from './components/SessionManagement';
@@ -22,6 +23,7 @@ import GitaInsights from './components/GitaInsights';
 import HomeworkManagement from './components/HomeworkManagement';
 import QuizGenerator from './components/QuizGenerator';
 import ResourcesGallery from './components/ResourcesGallery';
+import MentorshipProgram from './components/MentorshipProgram';
 import StudentRegistration from './components/StudentRegistration';
 import { storageService } from './services/storageService';
 import { Notification, GitaQuote } from './types';
@@ -112,6 +114,7 @@ const App: React.FC = () => {
               <SidebarLink to="/homework" icon={<FileText size={20} />} label="Assignments" />
               <SidebarLink to="/quizzes" icon={<BrainCircuit size={20} />} label="AI Quizzes" />
               <SidebarLink to="/resources" icon={<Library size={20} />} label="Library" />
+              <SidebarLink to="/mentorship" icon={<Users2 size={20} />} label="Mentorship" />
               <SidebarLink to="/gita" icon={<BookOpen size={20} />} label="Gita Wisdom" />
               <SidebarLink to="/register" icon={<UserPlus size={20} />} label="Join" />
             </nav>
@@ -196,6 +199,7 @@ const App: React.FC = () => {
               <Route path="/homework" element={<HomeworkManagement />} />
               <Route path="/quizzes" element={<QuizGenerator />} />
               <Route path="/resources" element={<ResourcesGallery />} />
+              <Route path="/mentorship" element={<MentorshipProgram />} />
               <Route path="/gita" element={<GitaInsights />} />
             </Routes>
           </div>
