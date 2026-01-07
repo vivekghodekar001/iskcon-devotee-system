@@ -17,5 +17,46 @@
             "sizes": "512x512",
             "type": "image/png"
         }
+    ],
+    "shortcuts": [
+        {
+            "name": "Daily Wisdom",
+            "short_name": "Wisdom",
+            "description": "Read today's Gita quote",
+            "url": "./#/gita",
+            "icons": [
+                {
+                    "src": "icon-512.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Digital Library",
+            "short_name": "Library",
+            "description": "Browse books and media",
+            "url": "./#/resources",
+            "icons": [
+                {
+                    "src": "icon-512.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Mentorship",
+            "short_name": "Mentors",
+            "description": "Connect with mentors",
+            "url": "./#/mentorship",
+            "icons": [
+                {
+                    "src": "icon-512.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        }
     ]
 }
