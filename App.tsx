@@ -11,11 +11,13 @@ import {
   Menu,
   X,
   UserPlus,
-  Quote
+  Quote,
+  FileText
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import SessionManagement from './components/SessionManagement';
 import GitaInsights from './components/GitaInsights';
+import HomeworkManagement from './components/HomeworkManagement';
 import StudentRegistration from './components/StudentRegistration';
 import { storageService } from './services/storageService';
 import { Notification, GitaQuote } from './types';
@@ -103,6 +105,7 @@ const App: React.FC = () => {
             <nav className="flex-1 px-4 space-y-1 mt-4">
               <SidebarLink to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" />
               <SidebarLink to="/sessions" icon={<Calendar size={20} />} label="Sessions" />
+              <SidebarLink to="/homework" icon={<FileText size={20} />} label="Assignments" />
               <SidebarLink to="/gita" icon={<BookOpen size={20} />} label="Gita Wisdom" />
               <SidebarLink to="/register" icon={<UserPlus size={20} />} label="Join" />
             </nav>
@@ -184,6 +187,7 @@ const App: React.FC = () => {
               <Route path="/" element={<Dashboard />} />
               <Route path="/register" element={<StudentRegistration />} />
               <Route path="/sessions" element={<SessionManagement addNotification={addNotification} />} />
+              <Route path="/homework" element={<HomeworkManagement />} />
               <Route path="/gita" element={<GitaInsights />} />
             </Routes>
           </div>
