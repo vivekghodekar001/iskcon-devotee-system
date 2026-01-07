@@ -18,6 +18,7 @@ import {
   Users2
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
+import AdminDashboard from './components/AdminDashboard';
 import SessionManagement from './components/SessionManagement';
 import GitaInsights from './components/GitaInsights';
 import HomeworkManagement from './components/HomeworkManagement';
@@ -228,7 +229,8 @@ const App: React.FC = () => {
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<AdminDashboard />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/register" element={<StudentRegistration />} />
               <Route path="/sessions" element={<SessionManagement addNotification={addNotification} />} />
               <Route path="/homework" element={<HomeworkManagement />} />
