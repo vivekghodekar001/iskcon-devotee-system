@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import {
   Users,
   Calendar,
@@ -15,10 +15,11 @@ import {
   FileText,
   BrainCircuit,
   Library,
-  Users2
+  Users2,
+  ShieldCheck
 } from 'lucide-react';
-import Dashboard from './components/Dashboard';
-import AdminDashboard from './components/AdminDashboard';
+import Dashboard from './components/Dashboard'; // Student Dashboard
+import AdminDashboard from './components/AdminDashboard'; // Admin Dashboard
 import SessionManagement from './components/SessionManagement';
 import GitaInsights from './components/GitaInsights';
 import HomeworkManagement from './components/HomeworkManagement';
@@ -34,13 +35,15 @@ import { supabase } from './lib/supabaseClient';
 const App: React.FC = () => {
   /* Auth State */
   const [session, setSession] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null); // 'admin' | 'student' | 'mentor'
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setLoading(false);
+      if (session?.user?.email) fetchUserRole(session.user.email);
+      else setLoading(false);
     });
 
     // Listen for changes
@@ -48,10 +51,27 @@ const App: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.user?.email) fetchUserRole(session.user.email);
+      else {
+        setUserRole(null);
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserRole = async (email: string) => {
+    try {
+      const profile = await storageService.getProfileByEmail(email);
+      setUserRole(profile?.role || 'student');
+    } catch (error) {
+      console.error("Error fetching role:", error);
+      setUserRole('student'); // Default to student on error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* App State */
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -110,6 +130,8 @@ const App: React.FC = () => {
     );
   }
 
+  const isAdmin = userRole === 'admin';
+
   return (
     <Router>
       <div className="min-h-screen flex bg-transparent overflow-hidden relative font-sans text-slate-900">
@@ -140,14 +162,21 @@ const App: React.FC = () => {
             </div>
 
             <nav className="flex-1 px-4 space-y-1 mt-4">
-              <SidebarLink to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" />
+              <SidebarLink to="/" icon={<LayoutDashboard size={20} />} label={isAdmin ? "Admin Dashboard" : "My Dashboard"} />
               <SidebarLink to="/sessions" icon={<Calendar size={20} />} label="Sessions" />
               <SidebarLink to="/homework" icon={<FileText size={20} />} label="Assignments" />
-              <SidebarLink to="/quizzes" icon={<BrainCircuit size={20} />} label="AI Quizzes" />
-              <SidebarLink to="/resources" icon={<Library size={20} />} label="Library" />
+
+              {/* Admin Only Links */}
+              {isAdmin && (
+                <>
+                  <SidebarLink to="/quizzes" icon={<BrainCircuit size={20} />} label="AI Quiz Gen" />
+                  <SidebarLink to="/register" icon={<UserPlus size={20} />} label="Add Devotee" />
+                </>
+              )}
+
+              <SidebarLink to="/resources" icon={<Library size={20} />} label="Digital Library" />
               <SidebarLink to="/mentorship" icon={<Users2 size={20} />} label="Mentorship" />
               <SidebarLink to="/gita" icon={<BookOpen size={20} />} label="Gita Wisdom" />
-              <SidebarLink to="/register" icon={<UserPlus size={20} />} label="Join" />
             </nav>
 
             <div className="p-4 border-t border-teal-500/30">
@@ -156,7 +185,9 @@ const App: React.FC = () => {
                   {session.user.email?.[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate text-teal-50">Devotee</p>
+                  <p className="text-sm font-medium truncate text-teal-50">
+                    {isAdmin ? 'Administrator' : 'Devotee'}
+                  </p>
                   <p className="text-xs text-teal-200/70 truncate">{session.user.email}</p>
                 </div>
               </div>
@@ -216,25 +247,29 @@ const App: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <Link
-                to="/devotees/new"
-                className="hidden sm:flex items-center gap-2 bg-[#FF9933] text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors shadow-sm shadow-orange-200"
-              >
-                <UserPlus size={18} />
-                <span>New Devotee</span>
-              </Link>
+
+              {isAdmin && (
+                <div className="hidden sm:flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">
+                  <ShieldCheck size={14} /> Admin Mode
+                </div>
+              )}
             </div>
           </header>
 
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
             <Routes>
-              <Route path="/" element={<AdminDashboard />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/register" element={<StudentRegistration />} />
+              {/* Conditional Home Route */}
+              <Route path="/" element={isAdmin ? <AdminDashboard /> : <Dashboard />} />
+
+              {/* Protected Routes */}
+              <Route path="/admin" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
+              <Route path="/register" element={isAdmin ? <StudentRegistration /> : <Navigate to="/" />} />
+              <Route path="/quizzes" element={isAdmin ? <QuizGenerator /> : <Navigate to="/" />} />
+
+              {/* Public/Shared Routes */}
               <Route path="/sessions" element={<SessionManagement addNotification={addNotification} />} />
               <Route path="/homework" element={<HomeworkManagement />} />
-              <Route path="/quizzes" element={<QuizGenerator />} />
               <Route path="/resources" element={<ResourcesGallery />} />
               <Route path="/mentorship" element={<MentorshipProgram />} />
               <Route path="/gita" element={<GitaInsights />} />
