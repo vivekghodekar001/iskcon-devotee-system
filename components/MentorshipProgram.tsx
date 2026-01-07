@@ -18,6 +18,17 @@ const MentorshipProgram: React.FC = () => {
     const [requestMessage, setRequestMessage] = useState('');
     const [loading, setLoading] = useState(true);
 
+    // Add Mentor State
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [newMentor, setNewMentor] = useState({
+        name: '',
+        spiritualName: '',
+        phone: '',
+        branch: '',
+        photoUrl: '',
+        email: ''
+    });
+
     // Mock current user ID for demo - in real app would come from AuthContext
     const currentUserId = 'demo-student-id';
 
@@ -51,6 +62,19 @@ const MentorshipProgram: React.FC = () => {
         }
     };
 
+    const handleAddMentor = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await storageService.createMentor(newMentor);
+            alert("Mentor Added Successfully!");
+            setShowAddForm(false);
+            setNewMentor({ name: '', spiritualName: '', phone: '', branch: '', photoUrl: '', email: '' });
+            loadMentors();
+        } catch (error) {
+            alert("Failed to add mentor. Please ensure unique email if providing one.");
+        }
+    };
+
     const filteredMentors = mentors.filter(m =>
         m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         m.spiritualName?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -58,12 +82,78 @@ const MentorshipProgram: React.FC = () => {
 
     return (
         <div className="h-[calc(100vh-100px)] flex flex-col gap-6">
-            <div>
-                <h2 className="text-2xl font-bold text-slate-900 font-serif flex items-center gap-2">
-                    <User className="text-[#0F766E]" /> Mentorship Program
-                </h2>
-                <p className="text-slate-500 text-sm">Connect with senior devotees for spiritual guidance.</p>
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-900 font-serif flex items-center gap-2">
+                        <User className="text-[#0F766E]" /> Mentorship Program
+                    </h2>
+                    <p className="text-slate-500 text-sm">Connect with senior devotees for spiritual guidance.</p>
+                </div>
+                <button
+                    onClick={() => setShowAddForm(true)}
+                    className="btn-divine px-4 py-2 rounded-xl flex items-center gap-2 font-medium"
+                >
+                    <User size={18} /> Add Mentor
+                </button>
             </div>
+
+            {/* Add Mentor Modal */}
+            {showAddForm && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95">
+                        <div className="flex justify-between items-start mb-4">
+                            <h4 className="font-bold text-[#0F766E]">Add New Mentor</h4>
+                            <button onClick={() => setShowAddForm(false)}><span className="text-slate-400">✕</span></button>
+                        </div>
+                        <form onSubmit={handleAddMentor} className="space-y-4">
+                            <input
+                                required
+                                placeholder="Legal Name"
+                                className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
+                                value={newMentor.name}
+                                onChange={e => setNewMentor({ ...newMentor, name: e.target.value })}
+                            />
+                            <input
+                                placeholder="Spiritual Name (e.g. Krishna Das)"
+                                className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
+                                value={newMentor.spiritualName}
+                                onChange={e => setNewMentor({ ...newMentor, spiritualName: e.target.value })}
+                            />
+                            <div className="grid grid-cols-2 gap-4">
+                                <input
+                                    required
+                                    placeholder="Phone Number"
+                                    className="w-full px-4 py-2 rounded-xl border-slate-200"
+                                    value={newMentor.phone}
+                                    onChange={e => setNewMentor({ ...newMentor, phone: e.target.value })}
+                                />
+                                <input
+                                    placeholder="Branch / Temple"
+                                    className="w-full px-4 py-2 rounded-xl border-slate-200"
+                                    value={newMentor.branch}
+                                    onChange={e => setNewMentor({ ...newMentor, branch: e.target.value })}
+                                />
+                            </div>
+                            <input
+                                placeholder="Photo URL (Optional)"
+                                className="w-full px-4 py-2 rounded-xl border-slate-200"
+                                value={newMentor.photoUrl}
+                                onChange={e => setNewMentor({ ...newMentor, photoUrl: e.target.value })}
+                            />
+                            <input
+                                placeholder="Email (Optional but recommended)"
+                                className="w-full px-4 py-2 rounded-xl border-slate-200"
+                                value={newMentor.email}
+                                onChange={e => setNewMentor({ ...newMentor, email: e.target.value })}
+                            />
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
+                                <button type="submit" className="btn-divine px-6 py-2 rounded-lg font-medium">Add Mentor</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Search Bar */}
             <div className="relative">
@@ -120,7 +210,7 @@ const MentorshipProgram: React.FC = () => {
 
                     {filteredMentors.length === 0 && (
                         <div className="col-span-full py-20 text-center text-slate-400">
-                            <p>No mentors found matching your search.</p>
+                            <p>No mentors found matching your search. Try adding one!</p>
                         </div>
                     )}
                 </div>
