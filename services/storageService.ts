@@ -283,6 +283,23 @@ export const storageService = {
     if (error) throw error;
   },
 
+  createMentor: async (mentor: any) => {
+    // Reuse profiles table but set role='mentor'
+    const { error } = await supabase
+      .from('profiles')
+      .insert({
+        name: mentor.name,
+        spiritual_name: mentor.spiritualName,
+        phone: mentor.phone,
+        branch: mentor.branch,
+        photo_url: mentor.photoUrl,
+        email: mentor.email, // Optional for now
+        role: 'mentor',
+        category: 'Regular' // Default
+      });
+    if (error) throw error;
+  },
+
   // NOTIFICATIONS
   getNotifications: async (): Promise<Notification[]> => {
     const { data, error } = await supabase
