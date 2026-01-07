@@ -8,6 +8,7 @@ const HomeworkManagement: React.FC = () => {
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
     const [homeworkList, setHomeworkList] = useState<Homework[]>([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
+    const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
 
     // Form State
     const [newItem, setNewItem] = useState({
@@ -16,6 +17,8 @@ const HomeworkManagement: React.FC = () => {
         dueDate: new Date().toISOString().split('T')[0],
         fileUrl: ''
     });
+
+    const [submissionLink, setSubmissionLink] = useState('');
 
     useEffect(() => {
         loadSessions();
@@ -60,6 +63,27 @@ const HomeworkManagement: React.FC = () => {
         } catch (error) {
             console.error(error);
             alert("Failed to create assignment");
+        }
+    };
+
+    const handleSubmitWork = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedHomework) return;
+
+        try {
+            // Mock student ID for now - in real app, get from Auth Context
+            const studentId = 'student-123';
+            await storageService.submitHomework({
+                homeworkId: selectedHomework.id,
+                studentId: studentId,
+                fileUrl: submissionLink
+            });
+            setSelectedHomework(null);
+            setSubmissionLink('');
+            alert("Homework Submitted Successfully! Hare Krishna.");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to submit homework.");
         }
     };
 
@@ -147,13 +171,36 @@ const HomeworkManagement: React.FC = () => {
                     </div>
                 )}
 
+                {/* Submit Modal */}
+                {selectedHomework && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95">
+                            <h3 className="font-bold text-lg mb-2">Submit: {selectedHomework.title}</h3>
+                            <p className="text-sm text-slate-500 mb-4">Paste a link to your work (Google Doc, Drive, etc.)</p>
+                            <form onSubmit={handleSubmitWork} className="space-y-4">
+                                <input
+                                    required
+                                    placeholder="https://..."
+                                    className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
+                                    value={submissionLink}
+                                    onChange={e => setSubmissionLink(e.target.value)}
+                                />
+                                <div className="flex justify-end gap-3">
+                                    <button type="button" onClick={() => setSelectedHomework(null)} className="px-4 py-2 text-slate-500">Cancel</button>
+                                    <button type="submit" className="btn-divine px-6 py-2 rounded-lg font-medium">Submit Work</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
                 {/* List */}
                 <div className="grid gap-4">
                     {homeworkList.length > 0 ? (
                         homeworkList.map(hw => (
                             <div key={hw.id} className="glass-card p-5 rounded-2xl hover:shadow-md transition-all group">
                                 <div className="flex justify-between items-start">
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 flex-1">
                                         <div className="flex items-center gap-2">
                                             <span className="bg-teal-50 text-[#0F766E] p-1.5 rounded-lg"><FileText size={16} /></span>
                                             <h4 className="font-bold text-slate-800">{hw.title}</h4>
@@ -170,9 +217,14 @@ const HomeworkManagement: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <button className="text-slate-300 hover:text-[#0F766E] p-2">
-                                        <ChevronRight size={20} />
-                                    </button>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <button
+                                            onClick={() => setSelectedHomework(hw)}
+                                            className="text-xs font-bold bg-[#0F766E] text-white px-3 py-1.5 rounded-lg hover:bg-teal-800 transition-colors shadow-sm"
+                                        >
+                                            Submit
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))
