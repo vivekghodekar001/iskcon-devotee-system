@@ -196,6 +196,32 @@ export const storageService = {
     if (error) throw error;
   },
 
+  // QUIZZES
+  getQuizzes: async (): Promise<any[]> => {
+    const { data, error } = await supabase
+      .from('quizzes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map((d: any) => ({
+      id: d.id,
+      topic: d.topic,
+      questions: d.questions,
+      createdAt: d.created_at
+    }));
+  },
+
+  createQuiz: async (quiz: any) => {
+    const { error } = await supabase
+      .from('quizzes')
+      .insert({
+        topic: quiz.topic,
+        questions: quiz.questions,
+        session_id: quiz.sessionId
+      });
+    if (error) throw error;
+  },
+
   // NOTIFICATIONS
   getNotifications: async (): Promise<Notification[]> => {
     const { data, error } = await supabase

@@ -86,6 +86,37 @@ export const getGitaAnswer = async (question: string): Promise<string> => {
   }
 };
 
+export const generateQuiz = async (topic: string): Promise<any[]> => {
+  try {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey || apiKey.includes('YOUR_GEMINI')) {
+      throw new Error("No API Key");
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: { responseMimeType: "application/json" }
+    });
+
+    const prompt = `Generate a 5-question multiple choice quiz about "${topic}" based on Bhagavad Gita teachings. 
+    Return a JSON array of objects with fields: 
+    - id (string)
+    - question (string)
+    - options (string array of 4 choices)
+    - correctAnswer (number index 0-3)
+    - explanation (short string)`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Quiz Generation Failed", error);
+    return [];
+  }
+};
+
 const getRandomFallbackQuote = (): GitaQuote => {
   const index = Math.floor(Math.random() * FALLBACK_QUOTES.length);
   return FALLBACK_QUOTES[index];

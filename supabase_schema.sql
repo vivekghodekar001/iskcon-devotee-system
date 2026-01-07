@@ -1,8 +1,6 @@
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
-
-
 -- Student Profiles (Extended)
 create table if not exists profiles (
   id uuid primary key default uuid_generate_v4(),
@@ -102,6 +100,26 @@ create table if not exists mentorship_requests (
   created_at timestamp with time zone default now()
 );
 
+-- Quizzes (AI Generated)
+create table if not exists quizzes (
+  id uuid primary key default uuid_generate_v4(),
+  session_id uuid references sessions(id), -- Optional link to session
+  topic text not null,
+  questions jsonb not null, -- Store questions array as JSONB
+  created_by uuid references profiles(id),
+  created_at timestamp with time zone default now()
+);
+
+-- Quiz Results
+create table if not exists quiz_results (
+  id uuid primary key default uuid_generate_v4(),
+  quiz_id uuid references quizzes(id),
+  student_id uuid references profiles(id),
+  score int,
+  total_questions int,
+  completed_at timestamp with time zone default now()
+);
+
 -- SAFETY: Disable RLS for now to avoid permission issues during dev
 alter table profiles disable row level security;
 alter table sessions disable row level security;
@@ -110,3 +128,5 @@ alter table homework disable row level security;
 alter table submissions disable row level security;
 alter table resources disable row level security;
 alter table mentorship_requests disable row level security;
+alter table quizzes disable row level security;
+alter table quiz_results disable row level security;

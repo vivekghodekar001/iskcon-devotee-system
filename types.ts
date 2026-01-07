@@ -88,3 +88,29 @@ export interface GitaQuote {
   chapter: number;
   text: number;
 }
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number; // Index 0-3
+  explanation?: string;
+}
+
+export interface Quiz {
+  id: string;
+  sessionId?: string;
+  topic: string;
+  questions: QuizQuestion[];
+  createdBy?: string;
+  createdAt: string;
+}
+
+export interface QuizResult {
+  id: string;
+  quizId: string;
+  studentId: string;
+  score: number;
+  totalQuestions: number;
+  completedAt: string;
+}
