@@ -6,7 +6,7 @@ export const storageService = {
   createProfile: async (profile: Partial<UserProfile>) => {
     const { data, error } = await supabase
       .from('profiles')
-      .insert({
+      .upsert({
         id: profile.id, // Allow explicit ID
         name: profile.name,
         spiritual_name: profile.spiritualName,
@@ -25,7 +25,7 @@ export const storageService = {
         interests: profile.interests,
         role: profile.role,
         category: profile.category
-      })
+      }, { onConflict: 'id' }) // Ensure upsert happens on ID conflict
       .select()
       .single();
 

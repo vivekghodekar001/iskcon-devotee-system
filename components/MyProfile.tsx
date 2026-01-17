@@ -59,16 +59,40 @@ const MyProfile: React.FC = () => {
 
             <form onSubmit={handleSave} className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-8 animate-in fade-in slide-in-from-bottom-4">
                 {/* Photo Section */}
+                {/* Photo Section */}
                 <div className="flex items-center gap-6 pb-6 border-b border-slate-50">
-                    <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden relative group">
+                    <div
+                        onClick={() => document.getElementById('profile-upload')?.click()}
+                        className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden relative group cursor-pointer"
+                    >
                         {formData.photoUrl ? (
                             <img src={formData.photoUrl} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
                             <User size={40} className="text-slate-300" />
                         )}
-                        <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center cursor-pointer transition-all">
+                        <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center transition-all">
                             <Camera size={20} className="text-white" />
                         </div>
+                        <input
+                            id="profile-upload"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    if (file.size > 500000) { // 500kb limit
+                                        alert("Image is too large. Please use an image under 500KB.");
+                                        return;
+                                    }
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                        setFormData({ ...formData, photoUrl: reader.result as string });
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
+                            }}
+                        />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 text-lg">{formData.name}</h3>
