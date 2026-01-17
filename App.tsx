@@ -20,32 +20,21 @@ const DevoteeManagement = lazy(() => import('./components/DevoteeManagement'));
 const ChantingCounter = lazy(() => import('./components/ChantingCounter'));
 const AdminQuizManager = lazy(() => import('./components/quiz/AdminQuizManager'));
 const UserQuizTaker = lazy(() => import('./components/quiz/UserQuizTaker'));
-const UserQuizList = lazy(() => import('./components/quiz/UserQuizList'));
+const UserQuizList = lazy(() => import('./components/quiz/UserQuizList')); // Restored
+const Onboarding = lazy(() => import('./components/Onboarding'));
+const MyProfile = lazy(() => import('./components/MyProfile'));
 
+// Restored LoadingSpinner
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-[#FFF9F0] text-[#0F766E] font-serif text-xl animate-pulse">
     Loading ISKCON Portal...
   </div>
 );
-// ... existing code ...
-{/* USER ROUTES */ }
-<Route element={<RoleGuard allowedRoles={['student', 'mentor']} />}>
-  <Route path="/app" element={<UserLayout />}>
-    <Route index element={<Dashboard />} />
-    <Route path="sessions" element={<SessionManagement mode="student" />} />
-    <Route path="chanting" element={<ChantingCounter />} />
-    <Route path="homework" element={<HomeworkManagement mode="student" />} />
-    <Route path="resources" element={<ResourcesGallery mode="student" />} />
-    <Route path="mentorship" element={<MentorshipProgram mode="student" />} />
-    <Route path="gita" element={<GitaInsights />} />
-    <Route path="quiz" element={<UserQuizTaker />} />
-    <Route path="my-quizzes" element={<UserQuizList />} />
-  </Route>
-</Route>
 
 const AppContent: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [profileExists, setProfileExists] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,6 +49,7 @@ const AppContent: React.FC = () => {
       if (session?.user?.email) fetchUserRole(session.user.email);
       else {
         setUserRole(null);
+        setProfileExists(false);
         setLoading(false);
       }
     });
@@ -70,10 +60,17 @@ const AppContent: React.FC = () => {
   const fetchUserRole = async (email: string) => {
     try {
       const profile = await storageService.getProfileByEmail(email);
-      setUserRole(profile?.role || 'student');
+      if (profile) {
+        setUserRole(profile.role || 'student');
+        setProfileExists(true);
+      } else {
+        setUserRole('student'); // Default role, but flow will redirect to onboarding
+        setProfileExists(false);
+      }
     } catch (error) {
       console.error("Error fetching role:", error);
       setUserRole('student');
+      setProfileExists(false);
     } finally {
       setLoading(false);
     }
@@ -91,11 +88,22 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Force Onboarding if no profile (and not already on onboarding page)
+  if (profileExists === false && window.location.hash !== '#/onboarding') {
+    // small hack to check hash because Navigate might loop if we are not careful
+  }
+
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
-        {/* Redirect Root based on Role */}
-        <Route path="/" element={<Navigate to={userRole === 'admin' ? "/admin" : "/app"} replace />} />
+        {/* Onboarding Route (Open to auth users without profile) */}
+        <Route path="/onboarding" element={profileExists ? <Navigate to="/" /> : <Onboarding />} />
+
+        {/* Redirect Root based on Role & Profile Status */}
+        <Route path="/" element={
+          !profileExists ? <Navigate to="/onboarding" replace /> :
+            <Navigate to={userRole === 'admin' ? "/admin" : "/app"} replace />
+        } />
 
         {/* ADMIN ROUTES */}
         <Route element={<RoleGuard allowedRoles={['admin']} />}>
@@ -122,6 +130,7 @@ const AppContent: React.FC = () => {
             <Route path="gita" element={<GitaInsights />} />
             <Route path="quiz" element={<UserQuizTaker />} />
             <Route path="my-quizzes" element={<UserQuizList />} />
+            <Route path="profile" element={<MyProfile />} />
           </Route>
         </Route>
 

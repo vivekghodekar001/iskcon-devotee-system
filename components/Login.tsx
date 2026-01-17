@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Phone, User as UserIcon, ArrowRight } from 'lucide-react';
+import SuccessModal from './common/SuccessModal';
 
 const Login: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [isSignUp, setIsSignUp] = useState(false);
+    const [successModal, setSuccessModal] = useState({ open: false, message: '' });
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        fullName: '', // Only for connection, optional during auth creation usually
+        fullName: '',
         phone: ''
     });
 
@@ -47,13 +49,16 @@ const Login: React.FC = () => {
                         data: {
                             full_name: formData.fullName,
                             phone: formData.phone
-                            // We can trigger profile creation here or let the user do it in Registration
                         }
                     }
                 });
                 if (error) throw error;
-                alert("Sign Up Successful! Please check your email for verification link.");
-                setIsSignUp(false); // Switch to login view
+                // Show Success Modal instead of Alert
+                setSuccessModal({
+                    open: true,
+                    message: "Account created successfully! Please check your email for the verification link."
+                });
+                setIsSignUp(false);
             } else {
                 // Login Logic
                 const { error } = await supabase.auth.signInWithPassword({
@@ -72,7 +77,14 @@ const Login: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#FFF9F0] flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col relative animate-in">
+            <SuccessModal
+                isOpen={successModal.open}
+                onClose={() => setSuccessModal({ ...successModal, open: false })}
+                title="Welcome to ISKCON!"
+                message={successModal.message}
+            />
+
+            <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-500">
                 {/* Decorative Top */}
                 <div className="h-32 bg-gradient-to-br from-[#0F766E] to-[#115E59] flex items-center justify-center relative overflow-hidden">
                     <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
@@ -122,7 +134,7 @@ const Login: React.FC = () => {
                         {/* Email Form */}
                         <form onSubmit={handleEmailAuth} className="space-y-4">
                             {isSignUp && (
-                                <div className="space-y-4 animate-in">
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
                                     <div className="relative">
                                         <UserIcon className="absolute left-3 top-3.5 text-slate-400" size={18} />
                                         <input
@@ -173,7 +185,7 @@ const Login: React.FC = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full btn-divine py-3 rounded-xl font-medium flex items-center justify-center gap-2 mt-2 shadow-lg hover:shadow-xl"
+                                className="w-full btn-divine py-3 rounded-xl font-medium flex items-center justify-center gap-2 mt-2 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
                             >
                                 {loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')}
                                 {!loading && <ArrowRight size={18} />}
