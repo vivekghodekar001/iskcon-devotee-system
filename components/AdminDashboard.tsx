@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { storageService } from '../services/storageService';
 import {
     Users,
@@ -32,25 +33,25 @@ const AdminDashboard: React.FC = () => {
     }, []);
 
     const loadStats = async () => {
-        // Mocking aggregation for now as Supabase JS client doesn't do complex counts easily without RPC
-        // In a real app, we would use count() queries
         try {
-            const students = await storageService.getProfiles(); // Need to implement getProfiles or similar
+            const students = await storageService.getProfiles();
             const sessions = await storageService.getSessions();
             const resources = await storageService.getResources();
-            // Mentorships needed
+            // Mentorships needed (using mentorship_requests if available, else 0)
+            // const requests = await storageService.getMentorshipRequests(); // If this existed
 
             setStats({
-                totalStudents: 124, // Mock for demo until aggregation is ready
+                totalStudents: students.length,
                 activeSessions: sessions.filter(s => s.status === 'Ongoing').length,
                 totalResources: resources.length,
-                pendingMentorships: 5 // Mock
+                pendingMentorships: 0 // Placeholder until mentorship requests API is exposed
             });
 
+            // Mock recent activity for now, replacing with real logs later if needed
             setRecentActivity([
-                { id: 1, text: "New student registration: Arjun Das", time: "2 mins ago" },
-                { id: 2, text: "Gita Session #42 completed", time: "1 hour ago" },
-                { id: 3, text: "New 'Vegetarianism' resource added", time: "3 hours ago" },
+                { id: 1, text: `System Online: ${students.length} devotees registered`, time: "Just now" },
+                { id: 2, text: `${sessions.length} sessions scheduled`, time: "Today" },
+                { id: 3, text: "Database schema synchronized", time: "Recent" },
             ]);
 
         } catch (error) {
@@ -77,34 +78,42 @@ const AdminDashboard: React.FC = () => {
 
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard
-                    icon={<Users className="text-blue-600" size={24} />}
-                    label="Total Devotees"
-                    value={stats.totalStudents}
-                    trend="+12% this month"
-                    color="bg-blue-50"
-                />
-                <StatCard
-                    icon={<Calendar className="text-purple-600" size={24} />}
-                    label="Active Sessions"
-                    value={stats.activeSessions}
-                    trend="3 ongoing now"
-                    color="bg-purple-50"
-                />
-                <StatCard
-                    icon={<BookOpen className="text-orange-600" size={24} />}
-                    label="Library Resources"
-                    value={stats.totalResources}
-                    trend="+5 new this week"
-                    color="bg-orange-50"
-                />
-                <StatCard
-                    icon={<Activity className="text-teal-600" size={24} />}
-                    label="Pending Mentorships"
-                    value={stats.pendingMentorships}
-                    trend="Action required"
-                    color="bg-teal-50"
-                />
+                <Link to="/admin/devotees">
+                    <StatCard
+                        icon={<Users className="text-blue-600" size={24} />}
+                        label="Total Devotees"
+                        value={stats.totalStudents}
+                        trend="View All Records"
+                        color="bg-blue-50"
+                    />
+                </Link>
+                <Link to="/admin/sessions">
+                    <StatCard
+                        icon={<Calendar className="text-purple-600" size={24} />}
+                        label="Active Sessions"
+                        value={stats.activeSessions}
+                        trend="Manage Sessions"
+                        color="bg-purple-50"
+                    />
+                </Link>
+                <Link to="/admin/resources">
+                    <StatCard
+                        icon={<BookOpen className="text-orange-600" size={24} />}
+                        label="Library Resources"
+                        value={stats.totalResources}
+                        trend="Manage Library"
+                        color="bg-orange-50"
+                    />
+                </Link>
+                <Link to="/admin/mentorship">
+                    <StatCard
+                        icon={<Activity className="text-teal-600" size={24} />}
+                        label="Pending Mentorships"
+                        value={stats.pendingMentorships}
+                        trend="View Requests"
+                        color="bg-teal-50"
+                    />
+                </Link>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -144,9 +153,6 @@ const AdminDashboard: React.FC = () => {
                                 </div>
                             </div>
                         ))}
-                        <button className="w-full text-center text-sm text-[#0F766E] font-medium hover:underline py-2">
-                            View All History
-                        </button>
                     </div>
                 </div>
             </div>
@@ -155,19 +161,19 @@ const AdminDashboard: React.FC = () => {
 };
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: number, trend: string, color: string }> = ({ icon, label, value, trend, color }) => (
-    <div className="glass-card bg-white/60 p-6 rounded-2xl">
+    <div className="glass-card bg-white/60 p-6 rounded-2xl hover:bg-white/80 transition-all cursor-pointer group h-full border border-transparent hover:border-slate-200 hover:shadow-md">
         <div className="flex justify-between items-start mb-4">
-            <div className={`p-3 rounded-xl ${color}`}>
+            <div className={`p-3 rounded-xl ${color} group-hover:scale-110 transition-transform`}>
                 {icon}
             </div>
-            <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-bold">
-                Live
+            <span className="bg-slate-100 text-slate-600 group-hover:bg-slate-200 transition-colors text-xs px-2 py-1 rounded-full font-bold">
+                View
             </span>
         </div>
         <h4 className="text-3xl font-bold text-slate-900 mb-1">{value}</h4>
         <p className="text-sm font-medium text-slate-500 mb-2">{label}</p>
-        <p className="text-xs text-slate-400 flex items-center gap-1">
-            {trend}
+        <p className="text-xs text-slate-400 flex items-center gap-1 group-hover:text-[#0F766E] transition-colors font-medium">
+            {trend} <TrendingUp size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
         </p>
     </div>
 );

@@ -52,12 +52,16 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Pending Quizzes Card */}
         <div className="glass-card bg-orange-50/60 p-6 rounded-2xl relative group hover:bg-orange-50/80 transition-colors border-2 border-orange-100">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-white text-orange-600 rounded-xl shadow-sm">
+          <Link to="/app/my-quizzes" className="flex items-center gap-3 mb-4 group/header cursor-pointer">
+            <div className="p-3 bg-white text-orange-600 rounded-xl shadow-sm group-hover/header:scale-110 transition-transform">
               <Target size={24} />
             </div>
-            <h3 className="font-bold text-slate-800">Pending Quizzes</h3>
-          </div>
+            <div>
+              <h3 className="font-bold text-slate-800 group-hover/header:text-orange-700 transition-colors flex items-center gap-2">
+                Pending Quizzes <ArrowRight size={16} className="opacity-0 group-hover/header:opacity-100 -translate-x-2 group-hover/header:translate-x-0 transition-all font-bold" />
+              </h3>
+            </div>
+          </Link>
           {pendingQuizzes.length > 0 ? (
             <div className="space-y-4">
               {pendingQuizzes.slice(0, 2).map((quiz: any) => (
@@ -72,34 +76,40 @@ const Dashboard: React.FC = () => {
                 </div>
               ))}
               {pendingQuizzes.length > 2 && (
-                <p className="text-xs text-center text-slate-400">+{pendingQuizzes.length - 2} more pending</p>
+                <Link to="/app/my-quizzes" className="block text-xs text-center text-slate-400 hover:text-orange-600 font-medium p-1">
+                  +{pendingQuizzes.length - 2} more pending (View All)
+                </Link>
               )}
             </div>
           ) : (
             <div className="text-center py-4">
               <p className="text-slate-400 text-sm italic">All caught up! No quizzes pending.</p>
+              <Link to="/app/my-quizzes" className="text-xs text-[#0F766E] font-bold mt-2 hover:underline block">View Completed Quizzes</Link>
             </div>
           )}
         </div>
 
         {/* Next Session Card */}
         <div className="glass-card bg-white/60 p-6 rounded-2xl relative group hover:bg-white/80 transition-colors">
-          <div className="flex items-center gap-3 mb-4">
+          <Link to="/app/sessions" className="flex items-center gap-3 mb-4 cursor-pointer">
             <div className="p-3 bg-orange-100 text-orange-600 rounded-xl">
               <Calendar size={24} />
             </div>
-            <h3 className="font-bold text-slate-800">Next Session</h3>
-          </div>
+            <h3 className="font-bold text-slate-800 group-hover:text-[#0F766E] transition-colors">Next Session</h3>
+          </Link>
           {nextSession ? (
             <>
               <h4 className="text-lg font-bold text-[#0F766E] mb-1">{nextSession.title}</h4>
               <p className="text-sm text-slate-500 mb-4">{new Date(nextSession.date).toLocaleString()}</p>
-              <Link to="/sessions" className="text-sm font-medium text-orange-600 flex items-center gap-1 hover:gap-2 transition-all">
+              <Link to="/app/sessions" className="text-sm font-medium text-orange-600 flex items-center gap-1 hover:gap-2 transition-all">
                 View Details <ArrowRight size={16} />
               </Link>
             </>
           ) : (
-            <p className="text-slate-500 text-sm">No upcoming sessions scheduled.</p>
+            <div className="text-center py-2">
+              <p className="text-slate-500 text-sm mb-2">No upcoming sessions scheduled.</p>
+              <Link to="/app/sessions" className="text-xs font-bold text-[#0F766E] hover:underline">Browse All Sessions</Link>
+            </div>
           )}
         </div>
 
@@ -146,8 +156,8 @@ const Dashboard: React.FC = () => {
       <div>
         <h3 className="text-xl font-bold text-slate-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link to="/resources" className="p-4 bg-white rounded-xl shadow-sm text-center hover:shadow-md transition-shadow border border-slate-100">
-            <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-2">
+          <Link to="/app/resources" className="p-4 bg-white rounded-xl shadow-sm text-center hover:shadow-md transition-shadow border border-slate-100 group">
+            <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
               <BookOpen size={20} />
             </div>
             <span className="text-sm font-medium text-slate-700">Read Books</span>
