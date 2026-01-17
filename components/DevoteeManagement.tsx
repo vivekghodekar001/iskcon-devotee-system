@@ -19,6 +19,7 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
   const [viewAttendance, setViewAttendance] = useState<Session[]>([]);
   const [viewChanting, setViewChanting] = useState<ChantingLog[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<Partial<UserProfile>>({
@@ -53,27 +54,26 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
     }
 
     try {
-      if (isNew) {
-        // Create mode
-        const newDevotee: any = {
-          id: crypto.randomUUID(),
-          name: formData.name || '',
-          spiritualName: formData.spiritualName || '',
-          email: formData.email || '',
-          phone: formData.phone || '',
-          status: (formData.status as InitiationStatus) || InitiationStatus.UNINITIATED,
-          photoUrl: formData.photoUrl || '',
-          hobbies: formData.hobbies ? (Array.isArray(formData.hobbies) ? formData.hobbies : [formData.hobbies]) : [],
-          dailyMalas: Number(formData.dailyMalas) || 0,
-          role: 'student',
-          category: 'Regular'
-        };
-        await storageService.createProfile(newDevotee);
-        // Reload list
-        const updatedList = await storageService.getAllProfiles();
-        setDevotees(updatedList);
-      }
-      // Note: Edit is not implemented in UI yet
+      const idToUse = editingId || crypto.randomUUID();
+      const devoteeData: any = {
+        id: idToUse,
+        name: formData.name || '',
+        spiritualName: formData.spiritualName || '',
+        email: formData.email || '',
+        phone: formData.phone || '',
+        status: (formData.status as InitiationStatus) || InitiationStatus.UNINITIATED,
+        photoUrl: formData.photoUrl || '',
+        hobbies: formData.hobbies ? (Array.isArray(formData.hobbies) ? formData.hobbies : [formData.hobbies]) : [],
+        dailyMalas: Number(formData.dailyMalas) || 0,
+        role: 'student',
+        category: 'Regular'
+      };
+
+      await storageService.createProfile(devoteeData);
+
+      // Reload list
+      const updatedList = await storageService.getAllProfiles();
+      setDevotees(updatedList);
 
       setShowForm(false);
       resetForm();
@@ -83,7 +83,23 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
     }
   };
 
+  const handleEdit = (devotee: UserProfile) => {
+    setFormData({
+      name: devotee.name,
+      spiritualName: devotee.spiritualName,
+      email: devotee.email,
+      phone: devotee.phone,
+      status: devotee.status as InitiationStatus,
+      photoUrl: devotee.photoUrl,
+      hobbies: devotee.hobbies && devotee.hobbies.length > 0 ? devotee.hobbies[0] : '',
+      dailyMalas: devotee.dailyMalas
+    });
+    setEditingId(devotee.id);
+    setShowForm(true);
+  };
+
   const resetForm = () => {
+    setEditingId(null);
     setFormData({
       name: '',
       spiritualName: '',
@@ -336,8 +352,8 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
                           )}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900 leading-none mb-1">{devotee.spiritualName || devotee.name}</p>
-                          {devotee.spiritualName && <p className="text-[11px] text-slate-500 font-medium tracking-tight uppercase">{devotee.name}</p>}
+                          <p className="font-bold text-slate-900 leading-none mb-1">{devotee.name}</p>
+                          {devotee.spiritualName && <p className="text-[11px] text-slate-600 font-bold tracking-tight uppercase">{devotee.spiritualName}</p>}
                         </div>
                       </div>
                     </td>
@@ -367,7 +383,10 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleEdit(devotee)}
+                          className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
                           <Edit2 size={16} />
                         </button>
                         <button
