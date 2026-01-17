@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
     BookOpen, LayoutDashboard, Calendar, Activity,
-    FileText, Library, Users2, LogOut, Menu, X, Bell, BrainCircuit
+    FileText, Library, Users2, LogOut, Menu, X, Bell, Brain
 } from 'lucide-react';
+// ...
+<NavLink to="/app/my-quizzes" icon={<Brain size={20} />} label="My Quizzes" /> {/* Added Link */ }
 import { supabase } from '../../lib/supabaseClient';
 
 const UserLayout: React.FC = () => {
@@ -19,7 +21,10 @@ const UserLayout: React.FC = () => {
         return (
             <Link
                 to={to}
-                onClick={() => setSidebarOpen(false)} // UX Fix: Auto-close functionality
+                onClick={(e) => {
+                    // Force close specificallly
+                    setSidebarOpen(false);
+                }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 group active:scale-95 ${active
                     ? 'bg-white/20 text-white shadow-lg backdrop-blur-sm'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
