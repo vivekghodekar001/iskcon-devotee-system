@@ -56,8 +56,8 @@ const DevoteeProfile: React.FC<DevoteeProfileProps> = ({ profile, attendance, ch
                             )}
                         </div>
                         <div className="pb-4 mb-2">
-                            <h2 className="text-3xl font-bold text-white font-serif tracking-wide">{profile.spiritualName || profile.name}</h2>
-                            {profile.spiritualName && <p className="text-teal-100 font-medium">{profile.name}</p>}
+                            <h2 className="text-3xl font-bold text-white font-serif tracking-wide">{profile.name}</h2>
+                            {profile.spiritualName && <p className="text-teal-200 font-bold uppercase tracking-wider text-sm mt-1">{profile.spiritualName}</p>}
                         </div>
                     </div>
                 </div>
