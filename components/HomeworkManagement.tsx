@@ -1,4 +1,3 @@
-```
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Plus, Clock, FileText, Upload } from 'lucide-react';
 import { storageService } from '../services/storageService';
@@ -70,9 +69,9 @@ const HomeworkManagement: React.FC<Props> = ({ mode }) => {
     const handleSubmitWork = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedHomework) return;
-        
+
         // In a real app, this would save to the Submissions table
-        alert(`Work submitted for ${ selectedHomework.title }! Link: ${ submissionLink } `);
+        alert("Work submitted for " + selectedHomework.title + "! Link: " + submissionLink);
         setSelectedHomework(null);
         setSubmissionLink('');
     };
@@ -88,13 +87,12 @@ const HomeworkManagement: React.FC<Props> = ({ mode }) => {
                     <div
                         key={session.id}
                         onClick={() => setActiveSessionId(session.id)}
-                        className={`p - 3 rounded - xl cursor - pointer transition - all border ${
-    activeSessionId === session.id
-        ? 'bg-teal-50 border-teal-200 shadow-sm'
-        : 'bg-white/50 border-transparent hover:bg-white'
-} `}
+                        className={`p-3 rounded-xl cursor-pointer transition-all border ${activeSessionId === session.id
+                                ? 'bg-teal-50 border-teal-200 shadow-sm'
+                                : 'bg-white/50 border-transparent hover:bg-white'
+                            }`}
                     >
-                        <p className={`font - bold text - sm ${ activeSessionId === session.id ? 'text-[#0F766E]' : 'text-slate-700' } `}>
+                        <p className={`font-bold text-sm ${activeSessionId === session.id ? 'text-[#0F766E]' : 'text-slate-700'}`}>
                             {session.title}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">{new Date(session.date).toLocaleDateString()}</p>
