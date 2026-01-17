@@ -32,12 +32,10 @@ const AdminLayout: React.FC = () => {
                 <div className="flex flex-col h-full">
                     <div className="p-6 flex items-center justify-between bg-white/5">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600 text-white shadow-lg border border-white/20">
-                                <ShieldCheck size={24} />
-                            </div>
+                            <img src="/input-logo.jpg" alt="Gita Life" className="w-10 h-10 rounded-full shadow-lg border border-white/20" />
                             <div>
-                                <h1 className="text-lg font-bold tracking-tight font-serif leading-tight">Admin Portal</h1>
-                                <p className="text-[10px] opacity-70 font-medium">Management System</p>
+                                <h1 className="text-lg font-bold tracking-tight font-serif leading-tight">Gita Life</h1>
+                                <p className="text-[10px] opacity-70 font-medium">Admin Portal</p>
                             </div>
                         </div>
                         <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/80 hover:text-white">

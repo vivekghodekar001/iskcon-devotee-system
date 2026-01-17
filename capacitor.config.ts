@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
     appId: 'com.iskcon.portal',
-    appName: 'ISKCON Portal',
+    appName: 'Gita Life',
     webDir: 'dist',
     server: {
         androidScheme: 'https'
