@@ -21,14 +21,17 @@ const Login: React.FC = () => {
         setFormData({ email: '', password: '', fullName: '', phone: '' });
     };
 
+    import { Capacitor } from '@capacitor/core';
+
     const handleGoogleLogin = async () => {
         try {
             setLoading(true);
 
             // Determine Redirect URL based on environment
-            const redirectTo = window.location.hostname === 'localhost'
-                ? window.location.origin
-                : 'com.iskcon.portal://google-auth';
+            // CRITICAL: On Android/iOS, hostname is 'localhost', so we must check Native Platform explicitly
+            const redirectTo = Capacitor.isNativePlatform()
+                ? 'com.iskcon.portal://google-auth'
+                : window.location.origin;
 
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
@@ -98,7 +101,7 @@ const Login: React.FC = () => {
                 <div className="h-32 bg-gradient-to-br from-[#0F766E] to-[#115E59] flex items-center justify-center relative overflow-hidden">
                     <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                     <div className="text-center text-white z-10">
-                        <img src="/input-logo.jpg" alt="Logo" className="w-20 h-20 mx-auto mb-2 rounded-full border-2 border-white/30 shadow-lg" />
+                        <img src="/logo-new.png" alt="Logo" className="w-20 h-20 mx-auto mb-2 rounded-full border-2 border-white/30 shadow-lg" />
                         <h2 className="text-2xl font-serif font-bold tracking-wide">Gita Life</h2>
                     </div>
                 </div>
