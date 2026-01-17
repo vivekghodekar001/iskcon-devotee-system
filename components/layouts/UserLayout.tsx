@@ -49,7 +49,7 @@ const UserLayout: React.FC = () => {
                 fixed inset-y-0 left-0 z-50 w-72 text-white transform transition-transform duration-300 cubic-bezier(0.2, 0, 0, 1) lg:relative lg:translate-x-0
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
                 shadow-2xl bg-[#0F766E] bg-gradient-to-b from-[#0F766E] to-[#115E59] flex flex-col
-            `}>
+            `} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white shadow-lg border border-white/20">
@@ -91,7 +91,8 @@ const UserLayout: React.FC = () => {
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300">
-                <header className="h-16 bg-white/80 backdrop-blur-xl border-b border-orange-100 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 transition-shadow duration-300">
+                <header className="h-16 bg-white/80 backdrop-blur-xl border-b border-orange-100 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 transition-shadow duration-300"
+                    style={{ paddingTop: 'env(safe-area-inset-top)', height: 'calc(4rem + env(safe-area-inset-top))' }}>
                     <button
                         onClick={() => setSidebarOpen(true)}
                         className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl active:scale-95 transition-all"

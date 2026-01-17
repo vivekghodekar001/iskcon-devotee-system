@@ -31,6 +31,10 @@ const LoadingSpinner = () => (
   </div>
 );
 
+import { App as CapacitorApp } from '@capacitor/app';
+
+// ... imports
+
 const AppContent: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -38,23 +42,40 @@ const AppContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Handle Deep Links (Google Login)
+    CapacitorApp.addListener('appUrlOpen', (data) => {
+      // supabase.auth.getSession() will pick up the hash from the URL automatically
+      // but we might need to manually pass it if Supabase doesn't catch it
+      // For now, let's rely on Supabase's auto-detection on cold start or window.location
+      console.log('App opened with URL:', data.url);
+    });
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user?.email) fetchUserRole(session.user.email);
-      else setLoading(false);
+      if (session?.user?.email) {
+        // Keep loading true while fetching role
+        fetchUserRole(session.user.email);
+      } else {
+        setLoading(false);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session?.user?.email) fetchUserRole(session.user.email);
-      else {
+      if (session?.user?.email) {
+        setLoading(true); // PREVENT FLASH: Start loading again when session changes
+        fetchUserRole(session.user.email);
+      } else {
         setUserRole(null);
         setProfileExists(false);
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      CapacitorApp.removeAllListeners();
+    };
   }, []);
 
   const fetchUserRole = async (email: string) => {

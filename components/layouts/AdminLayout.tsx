@@ -28,7 +28,7 @@ const AdminLayout: React.FC = () => {
             <aside className={`
         fixed inset-y-0 left-0 z-50 w-64 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl bg-slate-900 bg-gradient-to-b from-slate-900 to-slate-800
-      `}>
+      `} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
                 <div className="flex flex-col h-full">
                     <div className="p-6 flex items-center justify-between bg-white/5">
                         <div className="flex items-center gap-3">
@@ -70,7 +70,8 @@ const AdminLayout: React.FC = () => {
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30">
+                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30"
+                    style={{ paddingTop: 'env(safe-area-inset-top)', height: 'calc(4rem + env(safe-area-inset-top))' }}>
                     <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
                         <Menu size={24} />
                     </button>

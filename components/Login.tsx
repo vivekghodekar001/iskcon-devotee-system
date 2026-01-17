@@ -24,9 +24,18 @@ const Login: React.FC = () => {
     const handleGoogleLogin = async () => {
         try {
             setLoading(true);
+
+            // Determine Redirect URL based on environment
+            const redirectTo = window.location.hostname === 'localhost'
+                ? window.location.origin
+                : 'com.iskcon.portal://google-auth';
+
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
-                options: { redirectTo: window.location.origin }
+                options: {
+                    redirectTo: redirectTo,
+                    skipBrowserRedirect: false // Ensure this is false for web-based flows
+                }
             });
             if (error) throw error;
         } catch (error: any) {
