@@ -8,6 +8,12 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
+console.log('App initializing...', {
+  hasSupabase: !!import.meta.env.VITE_SUPABASE_URL,
+  hasGemini: !!import.meta.env.VITE_GEMINI_API_KEY,
+  mode: import.meta.env.MODE
+});
+
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
