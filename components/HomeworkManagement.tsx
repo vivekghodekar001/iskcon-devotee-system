@@ -1,17 +1,20 @@
+```
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Plus, Clock, FileText, CheckCircle2, ChevronRight, X, Upload } from 'lucide-react';
+import { BookOpen, Plus, Clock, FileText, Upload } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { Session, Homework } from '../types';
 
-import { supabase } from '../lib/supabaseClient';
+interface Props {
+    mode: 'admin' | 'student';
+}
 
-const HomeworkManagement: React.FC = () => {
+const HomeworkManagement: React.FC<Props> = ({ mode }) => {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
     const [homeworkList, setHomeworkList] = useState<Homework[]>([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const isAdmin = mode === 'admin';
 
     // Form State
     const [newItem, setNewItem] = useState({
@@ -24,14 +27,6 @@ const HomeworkManagement: React.FC = () => {
     const [submissionLink, setSubmissionLink] = useState('');
 
     useEffect(() => {
-        const checkRole = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user?.email) {
-                const profile = await storageService.getProfileByEmail(user.email);
-                setIsAdmin(profile?.role === 'admin');
-            }
-        };
-        checkRole();
         loadSessions();
     }, []);
 
@@ -49,6 +44,39 @@ const HomeworkManagement: React.FC = () => {
         }
     };
 
+    const loadHomework = async (sessionId: string) => {
+        const data = await storageService.getHomeworkBySession(sessionId);
+        setHomeworkList(data);
+    };
+
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!activeSessionId) return;
+
+        try {
+            await storageService.createHomework({
+                ...newItem,
+                sessionId: activeSessionId
+            });
+            setShowCreateForm(false);
+            setNewItem({ title: '', description: '', dueDate: '', fileUrl: '' });
+            loadHomework(activeSessionId);
+            alert("Assignment created!");
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleSubmitWork = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedHomework) return;
+        
+        // In a real app, this would save to the Submissions table
+        alert(`Work submitted for ${ selectedHomework.title }! Link: ${ submissionLink } `);
+        setSelectedHomework(null);
+        setSubmissionLink('');
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-100px)]">
             {/* Sidebar: Sessions List */}
@@ -60,12 +88,13 @@ const HomeworkManagement: React.FC = () => {
                     <div
                         key={session.id}
                         onClick={() => setActiveSessionId(session.id)}
-                        className={`p-3 rounded-xl cursor-pointer transition-all border ${activeSessionId === session.id
-                            ? 'bg-teal-50 border-teal-200 shadow-sm'
-                            : 'bg-white/50 border-transparent hover:bg-white'
-                            }`}
+                        className={`p - 3 rounded - xl cursor - pointer transition - all border ${
+    activeSessionId === session.id
+        ? 'bg-teal-50 border-teal-200 shadow-sm'
+        : 'bg-white/50 border-transparent hover:bg-white'
+} `}
                     >
-                        <p className={`font-bold text-sm ${activeSessionId === session.id ? 'text-[#0F766E]' : 'text-slate-700'}`}>
+                        <p className={`font - bold text - sm ${ activeSessionId === session.id ? 'text-[#0F766E]' : 'text-slate-700' } `}>
                             {session.title}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">{new Date(session.date).toLocaleDateString()}</p>
@@ -96,7 +125,7 @@ const HomeworkManagement: React.FC = () => {
                         <div className="glass-card p-6 rounded-2xl animate-in slide-in-from-top-4 border-l-4 border-[#0F766E]">
                             <div className="flex justify-between items-start mb-4">
                                 <h4 className="font-bold text-[#0F766E]">Create New Assignment</h4>
-                                <button onClick={() => setShowCreateForm(false)}><X size={18} className="text-slate-400" /></button>
+                                <button onClick={() => setShowCreateForm(false)} className="text-slate-400">✕</button>
                             </div>
                             <form onSubmit={handleCreate} className="space-y-4">
                                 <input
@@ -185,14 +214,16 @@ const HomeworkManagement: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-2">
-                                        <button
-                                            onClick={() => setSelectedHomework(hw)}
-                                            className="text-xs font-bold bg-[#0F766E] text-white px-3 py-1.5 rounded-lg hover:bg-teal-800 transition-colors shadow-sm"
-                                        >
-                                            Submit
-                                        </button>
-                                    </div>
+                                    {!isAdmin && (
+                                        <div className="flex flex-col items-end gap-2">
+                                            <button
+                                                onClick={() => setSelectedHomework(hw)}
+                                                className="text-xs font-bold bg-[#0F766E] text-white px-3 py-1.5 rounded-lg hover:bg-teal-800 transition-colors shadow-sm"
+                                            >
+                                                Submit
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))

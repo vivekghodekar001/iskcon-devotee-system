@@ -5,13 +5,18 @@ import { Resource } from '../types';
 
 import { supabase } from '../lib/supabaseClient';
 
-const ResourcesGallery: React.FC = () => {
+interface Props {
+    mode: 'admin' | 'student';
+}
+
+const ResourcesGallery: React.FC<Props> = ({ mode }) => {
     const [activeTab, setActiveTab] = useState<'all' | 'book' | 'video' | 'photo'>('all');
     const [resources, setResources] = useState<Resource[]>([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
     const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null);
-    const [isAdmin, setIsAdmin] = useState(false);
+
+    const isAdmin = mode === 'admin';
 
     const getYouTubeId = (url: string) => {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -29,14 +34,6 @@ const ResourcesGallery: React.FC = () => {
     });
 
     useEffect(() => {
-        const checkRole = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user?.email) {
-                const profile = await storageService.getProfileByEmail(user.email);
-                setIsAdmin(profile?.role === 'admin');
-            }
-        };
-        checkRole();
         loadResources();
     }, []);
 
