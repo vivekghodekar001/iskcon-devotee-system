@@ -61,8 +61,9 @@ const HomeworkManagement: React.FC<Props> = ({ mode }) => {
             setNewItem({ title: '', description: '', dueDate: '', fileUrl: '' });
             loadHomework(activeSessionId);
             alert("Assignment created!");
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            console.error("Failed to create assignment", error);
+            alert(`Failed to create assignment: ${error.message || error.error_description || "Unknown error"}`);
         }
     };
 
@@ -88,8 +89,8 @@ const HomeworkManagement: React.FC<Props> = ({ mode }) => {
                         key={session.id}
                         onClick={() => setActiveSessionId(session.id)}
                         className={`p-3 rounded-xl cursor-pointer transition-all border ${activeSessionId === session.id
-                                ? 'bg-teal-50 border-teal-200 shadow-sm'
-                                : 'bg-white/50 border-transparent hover:bg-white'
+                            ? 'bg-teal-50 border-teal-200 shadow-sm'
+                            : 'bg-white/50 border-transparent hover:bg-white'
                             }`}
                     >
                         <p className={`font-bold text-sm ${activeSessionId === session.id ? 'text-[#0F766E]' : 'text-slate-700'}`}>

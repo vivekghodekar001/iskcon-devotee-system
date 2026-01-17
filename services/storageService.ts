@@ -3,10 +3,11 @@ import { Session, Notification, UserProfile, ChantingLog } from '../types';
 
 export const storageService = {
   // PROFILES (Student ERP)
-  createProfile: async (profile: Omit<UserProfile, 'id' | 'createdAt'>) => {
+  createProfile: async (profile: Partial<UserProfile>) => {
     const { data, error } = await supabase
       .from('profiles')
       .insert({
+        id: profile.id, // Allow explicit ID
         name: profile.name,
         spiritual_name: profile.spiritualName,
         email: profile.email,

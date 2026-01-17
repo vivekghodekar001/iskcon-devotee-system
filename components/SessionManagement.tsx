@@ -86,10 +86,9 @@ const SessionManagement: React.FC<Props> = ({ mode }) => {
         type: 'Regular',
         status: 'Upcoming'
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create session", error);
-      alert("Failed to create session. Please try again.");
-      // No revert needed
+      alert(`Failed to create session: ${error.message || error.error_description || "Unknown error"}`);
     }
   };
 

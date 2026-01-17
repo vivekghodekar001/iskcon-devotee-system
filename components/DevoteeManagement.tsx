@@ -55,6 +55,7 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
       if (isNew) {
         // Create mode
         const newDevotee: any = {
+          id: crypto.randomUUID(),
           name: formData.name || '',
           spiritualName: formData.spiritualName || '',
           email: formData.email || '',
@@ -75,9 +76,9 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
 
       setShowForm(false);
       resetForm();
-    } catch (error) {
-      alert('Failed to save devotee');
-      console.error(error);
+    } catch (error: any) {
+      console.error("Failed to save devotee", error);
+      alert(`Failed to save devotee: ${error.message || error.error_description || "Unknown error"}`);
     }
   };
 
