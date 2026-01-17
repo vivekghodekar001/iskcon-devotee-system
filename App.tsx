@@ -20,12 +20,28 @@ const DevoteeManagement = lazy(() => import('./components/DevoteeManagement'));
 const ChantingCounter = lazy(() => import('./components/ChantingCounter'));
 const AdminQuizManager = lazy(() => import('./components/quiz/AdminQuizManager'));
 const UserQuizTaker = lazy(() => import('./components/quiz/UserQuizTaker'));
+const UserQuizList = lazy(() => import('./components/quiz/UserQuizList'));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-[#FFF9F0] text-[#0F766E] font-serif text-xl animate-pulse">
     Loading ISKCON Portal...
   </div>
 );
+// ... existing code ...
+{/* USER ROUTES */ }
+<Route element={<RoleGuard allowedRoles={['student', 'mentor']} />}>
+  <Route path="/app" element={<UserLayout />}>
+    <Route index element={<Dashboard />} />
+    <Route path="sessions" element={<SessionManagement mode="student" />} />
+    <Route path="chanting" element={<ChantingCounter />} />
+    <Route path="homework" element={<HomeworkManagement mode="student" />} />
+    <Route path="resources" element={<ResourcesGallery mode="student" />} />
+    <Route path="mentorship" element={<MentorshipProgram mode="student" />} />
+    <Route path="gita" element={<GitaInsights />} />
+    <Route path="quiz" element={<UserQuizTaker />} />
+    <Route path="my-quizzes" element={<UserQuizList />} />
+  </Route>
+</Route>
 
 const AppContent: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -105,6 +121,7 @@ const AppContent: React.FC = () => {
             <Route path="mentorship" element={<MentorshipProgram mode="student" />} />
             <Route path="gita" element={<GitaInsights />} />
             <Route path="quiz" element={<UserQuizTaker />} />
+            <Route path="my-quizzes" element={<UserQuizList />} />
           </Route>
         </Route>
 

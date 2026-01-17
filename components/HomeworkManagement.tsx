@@ -168,21 +168,49 @@ const HomeworkManagement: React.FC<Props> = ({ mode }) => {
                 {/* Submit Modal */}
                 {
                     selectedHomework && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95">
-                                <h3 className="font-bold text-lg mb-2">Submit: {selectedHomework.title}</h3>
-                                <p className="text-sm text-slate-500 mb-4">Paste a link to your work (Google Doc, Drive, etc.)</p>
+                        <div
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+                            onClick={() => setSelectedHomework(null)}
+                        >
+                            <div
+                                className="bg-white rounded-2xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200 shadow-2xl relative"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="font-bold text-xl text-slate-800">Submit Work</h3>
+                                        <p className="text-sm text-slate-500">{selectedHomework.title}</p>
+                                    </div>
+                                    <button onClick={() => setSelectedHomework(null)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">✕</button>
+                                </div>
+                                <p className="text-sm text-slate-600 mb-6 bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200">
+                                    Please paste a link to your completed work (Google Doc, Drive, etc.).
+                                </p>
                                 <form onSubmit={handleSubmitWork} className="space-y-4">
-                                    <input
-                                        required
-                                        placeholder="https://..."
-                                        className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
-                                        value={submissionLink}
-                                        onChange={e => setSubmissionLink(e.target.value)}
-                                    />
-                                    <div className="flex justify-end gap-3">
-                                        <button type="button" onClick={() => setSelectedHomework(null)} className="px-4 py-2 text-slate-500">Cancel</button>
-                                        <button type="submit" className="btn-divine px-6 py-2 rounded-lg font-medium">Submit Work</button>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Submission URL</label>
+                                        <input
+                                            required
+                                            placeholder="https://..."
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none transition-all"
+                                            value={submissionLink}
+                                            onChange={e => setSubmissionLink(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="flex justify-end gap-3 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedHomework(null)}
+                                            className="px-5 py-2.5 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="btn-divine px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-teal-100 transition-all hover:scale-105 active:scale-95"
+                                        >
+                                            Submit Work
+                                        </button>
                                     </div>
                                 </form>
                             </div>

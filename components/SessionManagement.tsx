@@ -138,56 +138,78 @@ const SessionManagement: React.FC<Props> = ({ mode }) => {
         </div>
 
         {showCreateForm && (
-          <div className="glass-card p-5 rounded-xl animate-in slide-in-from-top-4">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="font-bold text-[#0F766E]">New Session</h4>
-              <button onClick={() => setShowCreateForm(false)} className="text-slate-400"><X size={18} /></button>
-            </div>
-            <form onSubmit={handleCreateSession} className="space-y-4">
-              <input
-                required
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-1 focus:ring-teal-500"
-                placeholder="Session Title"
-                value={newSession.title}
-                onChange={e => setNewSession({ ...newSession, title: e.target.value })}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
-                  value={newSession.type}
-                  onChange={e => setNewSession({ ...newSession, type: e.target.value as any })}
-                >
-                  <option value="Regular">Regular</option>
-                  <option value="Camp">Camp</option>
-                  <option value="Event">Event</option>
-                </select>
-                <select
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
-                  value={newSession.status}
-                  onChange={e => setNewSession({ ...newSession, status: e.target.value as any })}
-                >
-                  <option value="Upcoming">Upcoming</option>
-                  <option value="Ongoing">Ongoing</option>
-                  <option value="Completed">Completed</option>
-                </select>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCreateForm(false)}>
+            <div
+              className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 relative"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="font-bold text-xl text-[#0F766E] font-serif">Schedule Session</h4>
+                <button onClick={() => setShowCreateForm(false)} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 p-1 rounded-full"><X size={18} /></button>
               </div>
-              <input
-                required
-                type="date"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
-                value={newSession.date}
-                onChange={e => setNewSession({ ...newSession, date: e.target.value })}
-              />
-              <input
-                className="w-full px-3 py-2 rounded-lg border border-slate-200"
-                placeholder="Facilitator"
-                value={newSession.facilitator}
-                onChange={e => setNewSession({ ...newSession, facilitator: e.target.value })}
-              />
-              <button type="submit" className="w-full py-2.5 btn-divine font-bold rounded-lg shadow-md transition-colors">
-                Schedule Session
-              </button>
-            </form>
+              <form onSubmit={handleCreateSession} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Title</label>
+                  <input
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+                    placeholder="e.g. Bhagavad Gita Ch. 2"
+                    value={newSession.title}
+                    onChange={e => setNewSession({ ...newSession, title: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Type</label>
+                    <select
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none bg-white font-medium text-slate-700"
+                      value={newSession.type}
+                      onChange={e => setNewSession({ ...newSession, type: e.target.value as any })}
+                    >
+                      <option value="Regular">Regular</option>
+                      <option value="Camp">Camp</option>
+                      <option value="Event">Event</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Status</label>
+                    <select
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none bg-white font-medium text-slate-700"
+                      value={newSession.status}
+                      onChange={e => setNewSession({ ...newSession, status: e.target.value as any })}
+                    >
+                      <option value="Upcoming">Upcoming</option>
+                      <option value="Ongoing">Ongoing</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Date</label>
+                  <input
+                    required
+                    type="date"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none"
+                    value={newSession.date}
+                    onChange={e => setNewSession({ ...newSession, date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facilitator</label>
+                  <input
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none"
+                    placeholder="e.g. HG Prabhu Jee"
+                    value={newSession.facilitator}
+                    onChange={e => setNewSession({ ...newSession, facilitator: e.target.value })}
+                  />
+                </div>
+                <div className="pt-2">
+                  <button type="submit" className="w-full py-3.5 btn-divine font-bold rounded-xl shadow-lg shadow-teal-200 transition-all hover:scale-[1.02] active:scale-95">
+                    Schedule Session
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
