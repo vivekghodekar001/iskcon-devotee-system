@@ -68,14 +68,17 @@ const UserLayout: React.FC = () => {
                     <NavLink to="/app/chanting" icon={<Activity size={20} />} label="Japa Sadhana" />
                     <NavLink to="/app/homework" icon={<FileText size={20} />} label="Assignments" />
                     <NavLink to="/app/my-quizzes" icon={<Brain size={20} />} label="My Quizzes" />
-                    <NavLink to="/app/profile" icon={<User size={20} />} label="My Profile" />
-
                     <div className="pt-6 pb-2 px-4 text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-2">
                         <span className="w-full h-px bg-white/10"></span> Resources <span className="w-full h-px bg-white/10"></span>
                     </div>
                     <NavLink to="/app/resources" icon={<Library size={20} />} label="Digital Library" />
                     <NavLink to="/app/mentorship" icon={<Users2 size={20} />} label="Mentorship" />
                     <NavLink to="/app/gita" icon={<BookOpen size={20} />} label="Gita Wisdom" />
+
+                    <div className="pt-6 pb-2 px-4 text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-2">
+                        <span className="w-full h-px bg-white/10"></span> Account <span className="w-full h-px bg-white/10"></span>
+                    </div>
+                    <NavLink to="/app/profile" icon={<User size={20} />} label="My Profile" />
                 </nav>
 
                 <div className="p-4 border-t border-white/10 bg-black/10">

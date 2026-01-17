@@ -120,6 +120,49 @@ const MyProfile: React.FC = () => {
                             <option value="First Initiated">First Initiated</option>
                         </select>
                     </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            Date of Birth
+                        </label>
+                        <input
+                            type="date"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
+                            value={formData.dob || ''}
+                            onChange={e => setFormData({ ...formData, dob: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            Native Place
+                        </label>
+                        <input
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
+                            value={formData.nativePlace || ''}
+                            onChange={e => setFormData({ ...formData, nativePlace: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            Year of Study
+                        </label>
+                        <input
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
+                            placeholder="e.g. 2nd Year"
+                            value={formData.yearOfStudy || ''}
+                            onChange={e => setFormData({ ...formData, yearOfStudy: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            Branch / Department
+                        </label>
+                        <input
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
+                            placeholder="e.g. Engineering"
+                            value={formData.branch || ''}
+                            onChange={e => setFormData({ ...formData, branch: e.target.value })}
+                        />
+                    </div>
                 </div>
 
                 <div className="space-y-2">
