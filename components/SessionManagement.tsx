@@ -56,13 +56,19 @@ const SessionManagement: React.FC<Props> = ({ mode }) => {
       attendeeIds: []
     };
 
-    // Optimistic Update
-    const updated = [session, ...sessions];
-    setSessions(updated);
+    // Optimistic Update REMOVED to ensure data persistence
+    // setSessions(updated);
 
     try {
-      await storageService.createSession(session);
+      // Wait for backend confirmation
+      const savedSession = await storageService.createSession(session);
+
+      // Update local state ONLY after success
+      setSessions(prev => [session, ...prev]);
       setShowCreateForm(false);
+
+      alert("Session saved successfully!"); // Explicit feedback
+
       await storageService.createNotification({
         id: crypto.randomUUID(),
         title: 'New Session Created',
@@ -82,9 +88,8 @@ const SessionManagement: React.FC<Props> = ({ mode }) => {
       });
     } catch (error) {
       console.error("Failed to create session", error);
-      alert("Failed to create session");
-      // Revert optimistic update
-      setSessions(prev => prev.filter(s => s.id !== session.id));
+      alert("Failed to create session. Please try again.");
+      // No revert needed
     }
   };
 

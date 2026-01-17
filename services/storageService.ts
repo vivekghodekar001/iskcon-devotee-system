@@ -124,23 +124,31 @@ export const storageService = {
   },
 
   createSession: async (session: Session) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('sessions')
       .insert({
+        id: session.id, // Explicitly pass ID to match client-side generation
         title: session.title,
         description: session.description,
         date: session.date,
         location: session.location,
         facilitator: session.facilitator,
-        type: session.type,
-        status: session.status,
+        type: session.type, // Enum validated by TS
+        status: session.status, // Enum validated by TS
         attendee_ids: session.attendeeIds
-      });
-    if (error) throw error;
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase Create Session Error:", error);
+      throw error;
+    }
+    return data;
   },
 
   updateSession: async (session: Session) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('sessions')
       .update({
         title: session.title,
@@ -152,8 +160,15 @@ export const storageService = {
         status: session.status,
         attendee_ids: session.attendeeIds
       })
-      .eq('id', session.id);
-    if (error) throw error;
+      .eq('id', session.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase Update Session Error:", error);
+      throw error;
+    }
+    return data;
   },
 
   // HOMEWORK
@@ -176,7 +191,7 @@ export const storageService = {
   },
 
   createHomework: async (homework: any) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('homework')
       .insert({
         session_id: homework.sessionId,
@@ -184,12 +199,19 @@ export const storageService = {
         description: homework.description,
         file_url: homework.fileUrl,
         due_date: homework.dueDate
-      });
-    if (error) throw error;
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase Create Homework Error:", error);
+      throw error;
+    }
+    return data;
   },
 
   submitHomework: async (submission: any) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('submissions')
       .insert({
         homework_id: submission.homeworkId,
@@ -197,8 +219,12 @@ export const storageService = {
         file_url: submission.fileUrl,
         status: 'Submitted',
         submitted_at: new Date().toISOString()
-      });
+      })
+      .select()
+      .single();
+
     if (error) throw error;
+    return data;
   },
 
   // QUIZZES
@@ -217,14 +243,76 @@ export const storageService = {
   },
 
   createQuiz: async (quiz: any) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('quizzes')
       .insert({
         topic: quiz.topic,
         questions: quiz.questions,
         session_id: quiz.sessionId
-      });
+      })
+      .select()
+      .single();
+
     if (error) throw error;
+    return data;
+  },
+
+  saveQuizResult: async (result: any) => {
+    const { data, error } = await supabase
+      .from('quiz_results')
+      .insert({
+        quiz_id: result.quizId,
+        student_id: result.studentId,
+        score: result.score,
+        total_questions: result.totalQuestions,
+        completed_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  getPendingQuizzes: async (studentId: string): Promise<any[]> => {
+    // 1. Get sessions attended by student
+    const { data: attendedSessions, error: sessionError } = await supabase
+      .from('sessions')
+      .select('id')
+      .contains('attendee_ids', [studentId]);
+
+    if (sessionError) throw sessionError;
+    if (!attendedSessions || attendedSessions.length === 0) return [];
+
+    const sessionIds = attendedSessions.map(s => s.id);
+
+    // 2. Get quizzes for those sessions
+    const { data: quizzes, error: quizError } = await supabase
+      .from('quizzes')
+      .select('*')
+      .in('session_id', sessionIds);
+
+    if (quizError) throw quizError;
+    if (!quizzes || quizzes.length === 0) return [];
+
+    // 3. Get completed quizzes
+    const { data: results, error: resultError } = await supabase
+      .from('quiz_results')
+      .select('quiz_id')
+      .eq('student_id', studentId);
+
+    if (resultError) throw resultError;
+
+    const completedQuizIds = new Set(results?.map(r => r.quiz_id));
+
+    // 4. Return pending
+    return quizzes.filter(q => !completedQuizIds.has(q.id)).map(d => ({
+      id: d.id,
+      topic: d.topic,
+      questions: d.questions,
+      sessionId: d.session_id,
+      createdAt: d.created_at
+    }));
   },
 
   // RESOURCES (Digital Library)
@@ -245,7 +333,7 @@ export const storageService = {
   },
 
   createResource: async (resource: any) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('resources')
       .insert({
         title: resource.title,
@@ -253,8 +341,12 @@ export const storageService = {
         category: resource.category,
         url: resource.url,
         thumbnail_url: resource.thumbnailUrl
-      });
+      })
+      .select()
+      .single();
+
     if (error) throw error;
+    return data;
   },
 
   deleteResource: async (id: string) => {
@@ -282,20 +374,24 @@ export const storageService = {
   },
 
   createMentorshipRequest: async (studentId: string, mentorId: string, message: string) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('mentorship_requests')
       .insert({
         student_id: studentId,
         mentor_id: mentorId,
         message,
         status: 'Pending'
-      });
+      })
+      .select()
+      .single();
+
     if (error) throw error;
+    return data;
   },
 
   createMentor: async (mentor: any) => {
     // Reuse profiles table but set role='mentor'
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .insert({
         name: mentor.name,
@@ -306,8 +402,12 @@ export const storageService = {
         email: mentor.email, // Optional for now
         role: 'mentor',
         category: 'Regular' // Default
-      });
+      })
+      .select()
+      .single();
+
     if (error) throw error;
+    return data;
   },
 
   getProfiles: async () => {

@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabaseClient';
 const Dashboard: React.FC = () => {
   const [nextSession, setNextSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [pendingQuizzes, setPendingQuizzes] = useState<any[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -16,6 +17,11 @@ const Dashboard: React.FC = () => {
         if (user?.email) {
           const profile = await storageService.getProfileByEmail(user.email);
           setUserProfile(profile);
+
+          if (profile?.id) {
+            const quizzes = await storageService.getPendingQuizzes(profile.id);
+            setPendingQuizzes(quizzes);
+          }
         }
 
         const sessions = await storageService.getSessions();
@@ -44,6 +50,38 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Pending Quizzes Card */}
+        <div className="glass-card bg-orange-50/60 p-6 rounded-2xl relative group hover:bg-orange-50/80 transition-colors border-2 border-orange-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 bg-white text-orange-600 rounded-xl shadow-sm">
+              <Target size={24} />
+            </div>
+            <h3 className="font-bold text-slate-800">Pending Quizzes</h3>
+          </div>
+          {pendingQuizzes.length > 0 ? (
+            <div className="space-y-4">
+              {pendingQuizzes.slice(0, 2).map((quiz: any) => (
+                <div key={quiz.id} className="bg-white p-3 rounded-xl border border-orange-100 shadow-sm">
+                  <h4 className="font-bold text-slate-800 text-sm mb-1">{quiz.topic}</h4>
+                  <Link
+                    to={`/app/quiz?id=${quiz.id}`}
+                    className="w-full mt-2 flex items-center justify-center gap-2 bg-[#FF8C00] text-white py-2 rounded-lg text-xs font-bold hover:bg-orange-600 transition-colors"
+                  >
+                    Answer Now <ArrowRight size={12} />
+                  </Link>
+                </div>
+              ))}
+              {pendingQuizzes.length > 2 && (
+                <p className="text-xs text-center text-slate-400">+{pendingQuizzes.length - 2} more pending</p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-slate-400 text-sm italic">All caught up! No quizzes pending.</p>
+            </div>
+          )}
+        </div>
+
         {/* Next Session Card */}
         <div className="glass-card bg-white/60 p-6 rounded-2xl relative group hover:bg-white/80 transition-colors">
           <div className="flex items-center gap-3 mb-4">
