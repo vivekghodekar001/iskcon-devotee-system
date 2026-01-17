@@ -3,11 +3,15 @@ import { Book, Image, Play, Link as LinkIcon, Plus, X, Upload, Trash2 } from 'lu
 import { storageService } from '../services/storageService';
 import { Resource } from '../types';
 
+import { supabase } from '../lib/supabaseClient';
+
 const ResourcesGallery: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'all' | 'book' | 'video' | 'photo'>('all');
     const [resources, setResources] = useState<Resource[]>([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+    const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     const getYouTubeId = (url: string) => {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -25,6 +29,14 @@ const ResourcesGallery: React.FC = () => {
     });
 
     useEffect(() => {
+        const checkRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.email) {
+                const profile = await storageService.getProfileByEmail(user.email);
+                setIsAdmin(profile?.role === 'admin');
+            }
+        };
+        checkRole();
         loadResources();
     }, []);
 
@@ -54,16 +66,21 @@ const ResourcesGallery: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent card click
-        if (window.confirm("Are you sure you want to delete this resource?")) {
-            try {
-                await storageService.deleteResource(id);
-                loadResources();
-            } catch (error) {
-                console.error(error);
-                alert("Failed to delete resource");
-            }
+    const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setDeleteConfirmationId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirmationId) return;
+
+        try {
+            await storageService.deleteResource(deleteConfirmationId);
+            loadResources();
+            setDeleteConfirmationId(null);
+        } catch (error) {
+            console.error(error);
+            alert("Failed to delete resource");
         }
     };
 
@@ -83,12 +100,14 @@ const ResourcesGallery: React.FC = () => {
                     <h2 className="text-2xl font-bold text-slate-900 font-serif">Wisdom Gallery</h2>
                     <p className="text-slate-500 text-sm">Divine books, lectures, and memories.</p>
                 </div>
-                <button
-                    onClick={() => setShowAddForm(true)}
-                    className="btn-divine px-4 py-2 rounded-xl flex items-center gap-2 font-medium"
-                >
-                    <Plus size={18} /> Add Resource
-                </button>
+                {isAdmin && (
+                    <button
+                        onClick={() => setShowAddForm(true)}
+                        className="btn-divine px-4 py-2 rounded-xl flex items-center gap-2 font-medium"
+                    >
+                        <Plus size={18} /> Add Resource
+                    </button>
+                )}
             </div>
 
             {/* Tabs */}
@@ -190,13 +209,15 @@ const ResourcesGallery: React.FC = () => {
                             <div className="absolute top-2 right-2 bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm">
                                 {getIcon(res.type)}
                             </div>
-                            <button
-                                onClick={(e) => handleDelete(res.id, e)}
-                                className="absolute top-2 left-2 bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
-                                title="Delete Resource"
-                            >
-                                <Trash2 size={16} />
-                            </button>
+                            {isAdmin && (
+                                <button
+                                    onClick={(e) => handleDeleteClick(res.id, e)}
+                                    className="absolute top-2 left-2 bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors z-20"
+                                    title="Delete Resource"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            )}
                             {res.type === 'video' && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <div className="bg-white/90 rounded-full p-3 shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
@@ -245,7 +266,40 @@ const ResourcesGallery: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div>
+
+            {/* Delete Confirmation Modal */}
+            {
+                deleteConfirmationId && (
+                    <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl transform transition-all scale-100">
+                            <div className="flex flex-col items-center text-center gap-4">
+                                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                                    <Trash2 size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">Delete Resource?</h3>
+                                    <p className="text-slate-500 text-sm mt-1">This action cannot be undone. Are you sure you want to remove this item?</p>
+                                </div>
+                                <div className="flex gap-3 w-full mt-2">
+                                    <button
+                                        onClick={() => setDeleteConfirmationId(null)}
+                                        className="flex-1 px-4 py-2 text-slate-700 font-medium hover:bg-slate-50 rounded-xl"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={confirmDelete}
+                                        className="flex-1 px-4 py-2 bg-red-600 text-white font-medium hover:bg-red-700 rounded-xl shadow-sm hover:shadow"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

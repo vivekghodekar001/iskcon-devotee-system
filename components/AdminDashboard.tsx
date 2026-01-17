@@ -71,8 +71,8 @@ const AdminDashboard: React.FC = () => {
     return (
         <div className="space-y-8 animate-in">
             <header>
-                <h2 className="text-3xl font-bold font-serif text-[#0F766E]">Temple Admin Dashboard</h2>
-                <p className="text-slate-500">Overview of community growth and engagement.</p>
+                <h2 className="text-3xl font-bold font-serif text-slate-900">Administration Portal</h2>
+                <p className="text-slate-500">Overview of temple community growth and daily engagement.</p>
             </header>
 
             {/* Stat Cards */}

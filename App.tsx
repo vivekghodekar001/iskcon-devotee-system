@@ -17,7 +17,8 @@ import {
   Library,
   Users2,
   ShieldCheck,
-  Activity
+  Activity,
+  ToggleLeft
 } from 'lucide-react';
 import Dashboard from './components/Dashboard'; // Student Dashboard
 import AdminDashboard from './components/AdminDashboard'; // Admin Dashboard
@@ -34,11 +35,17 @@ import { Notification, GitaQuote } from './types';
 import Login from './components/Login';
 import { supabase } from './lib/supabaseClient';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const location = useLocation();
   /* Auth State */
   const [session, setSession] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null); // 'admin' | 'student' | 'mentor'
   const [loading, setLoading] = useState(true);
+
+  // DEV TOOLS: Toggle Role
+  const toggleDevRole = () => {
+    setUserRole(prev => prev === 'admin' ? 'student' : 'admin');
+  };
 
   useEffect(() => {
     // Check active session
@@ -124,19 +131,36 @@ const App: React.FC = () => {
   // Auth Guard
   if (!session) {
     return (
-      <Router>
-        <Routes>
-          <Route path="*" element={<Login />} />
-        </Routes>
-      </Router>
+      <Routes>
+        <Route path="*" element={<Login />} />
+      </Routes>
     );
   }
 
   const isAdmin = userRole === 'admin';
 
+  // Dynamic Theme Colors based on Role
+  const sidebarBg = isAdmin
+    ? "bg-slate-900 bg-gradient-to-b from-slate-900 to-slate-800"
+    : "bg-[#0F766E] bg-gradient-to-b from-[#0F766E] to-[#115E59]";
+
+  const headerBorder = isAdmin ? "border-slate-200" : "border-orange-100";
+
   return (
-    <Router>
+    <>
       <div className="min-h-screen flex bg-transparent overflow-hidden relative font-sans text-slate-900">
+
+        {/* DEV TOOLS FLOAT */}
+        <div className="fixed bottom-4 right-4 z-[9999] opacity-50 hover:opacity-100 transition-opacity">
+          <button
+            onClick={toggleDevRole}
+            className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-2"
+            title="Toggle between Admin and Student view for testing"
+          >
+            <ToggleLeft size={16} /> Dev: {isAdmin ? 'Admin View' : 'Student View'}
+          </button>
+        </div>
+
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div
@@ -147,56 +171,72 @@ const App: React.FC = () => {
 
         {/* Sidebar */}
         <aside className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-[#0F766E] text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl bg-gradient-to-b from-[#0F766E] to-[#115E59]
+          fixed inset-y-0 left-0 z-50 w-64 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl ${sidebarBg}
         `}>
           <div className="flex flex-col h-full">
-            <div className="p-6 flex items-center justify-between">
+            <div className={`p-6 flex items-center justify-between ${isAdmin ? 'bg-white/5' : ''}`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white shadow-lg border border-white/20">
-                  <BookOpen size={24} />
+                <div className={`w-10 h-10 backdrop-blur-md rounded-full flex items-center justify-center text-white shadow-lg border border-white/20 ${isAdmin ? 'bg-blue-600' : 'bg-white/10'}`}>
+                  {isAdmin ? <ShieldCheck size={24} /> : <BookOpen size={24} />}
                 </div>
-                <h1 className="text-xl font-bold tracking-tight font-serif">ISKCON Portal</h1>
+                <div>
+                  <h1 className="text-lg font-bold tracking-tight font-serif leading-tight">
+                    {isAdmin ? 'Admin Portal' : 'ISKCON Portal'}
+                  </h1>
+                  <p className="text-[10px] opacity-70 font-medium">
+                    {isAdmin ? 'Management System' : 'Devotee Sadhu Sanga'}
+                  </p>
+                </div>
               </div>
               <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/80 hover:text-white">
                 <X size={24} />
               </button>
             </div>
 
-            <nav className="flex-1 px-4 space-y-1 mt-4">
+            <nav className="flex-1 px-4 space-y-1 mt-6">
               <SidebarLink to="/" icon={<LayoutDashboard size={20} />} label={isAdmin ? "Admin Dashboard" : "My Dashboard"} />
-              <SidebarLink to="/sessions" icon={<Calendar size={20} />} label="Sessions" />
-              <SidebarLink to="/chanting" icon={<Activity size={20} />} label="Japa Sadhana" />
-              <SidebarLink to="/homework" icon={<FileText size={20} />} label="Assignments" />
+
+              {!isAdmin && (
+                <>
+                  <SidebarLink to="/sessions" icon={<Calendar size={20} />} label="Sessions" />
+                  <SidebarLink to="/chanting" icon={<Activity size={20} />} label="Japa Sadhana" />
+                  <SidebarLink to="/homework" icon={<FileText size={20} />} label="Assignments" />
+                </>
+              )}
 
               {/* Admin Only Links */}
               {isAdmin && (
                 <>
+                  <div className="pt-4 pb-2 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Management</div>
+                  <SidebarLink to="/sessions" icon={<Calendar size={20} />} label="Manage Sessions" />
+                  <SidebarLink to="/devotees" icon={<UserPlus size={20} />} label="Devotee Database" />
                   <SidebarLink to="/quizzes" icon={<BrainCircuit size={20} />} label="AI Quiz Gen" />
-                  <SidebarLink to="/devotees" icon={<UserPlus size={20} />} label="Devotees" />
+                  <SidebarLink to="/homework" icon={<FileText size={20} />} label="Review Homework" />
                 </>
               )}
 
+              <div className="pt-4 pb-2 px-4 text-xs font-bold text-white/40 uppercase tracking-wider">Resources</div>
               <SidebarLink to="/resources" icon={<Library size={20} />} label="Digital Library" />
               <SidebarLink to="/mentorship" icon={<Users2 size={20} />} label="Mentorship" />
               <SidebarLink to="/gita" icon={<BookOpen size={20} />} label="Gita Wisdom" />
             </nav>
 
-            <div className="p-4 border-t border-teal-500/30">
+            <div className="p-4 border-t border-white/10 bg-black/10">
               <div className="flex items-center gap-3 px-2 py-3">
-                <div className="w-8 h-8 rounded-full bg-teal-800/50 flex items-center justify-center font-bold text-teal-100 border border-teal-500/30">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border border-white/20 ${isAdmin ? 'bg-blue-900 text-blue-100' : 'bg-teal-800/50 text-teal-100'}`}>
                   {session.user.email?.[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate text-teal-50">
+                  <p className="text-sm font-medium truncate text-white">
                     {isAdmin ? 'Administrator' : 'Devotee'}
                   </p>
-                  <p className="text-xs text-teal-200/70 truncate">{session.user.email}</p>
+                  <p className="text-xs text-white/50 truncate">{session.user.email}</p>
                 </div>
               </div>
               <button
                 onClick={() => supabase.auth.signOut()}
-                className="flex items-center gap-3 px-2 py-3 w-full text-left text-teal-200/70 hover:text-white hover:bg-teal-800/50 rounded-lg transition-colors"
+                className="flex items-center gap-3 px-2 py-3 w-full text-left text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               >
                 <LogOut size={20} />
                 <span className="text-sm font-medium">Logout</span>
@@ -206,9 +246,9 @@ const App: React.FC = () => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50/50">
           {/* Header */}
-          <header className="h-16 bg-white/80 backdrop-blur-md border-b border-orange-100 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30">
+          <header className={`h-16 bg-white/80 backdrop-blur-md border-b flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 transition-colors ${headerBorder}`}>
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
@@ -252,7 +292,7 @@ const App: React.FC = () => {
               </div>
 
               {isAdmin && (
-                <div className="hidden sm:flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">
+                <div className="hidden sm:flex items-center gap-2 bg-slate-900 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                   <ShieldCheck size={14} /> Admin Mode
                 </div>
               )}
@@ -260,28 +300,30 @@ const App: React.FC = () => {
           </header>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
-            <Routes>
-              {/* Conditional Home Route */}
-              <Route path="/" element={isAdmin ? <AdminDashboard /> : <Dashboard />} />
+          <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth z-0">
+            <div key={location.pathname} className="page-wrapper min-h-full">
+              <Routes>
+                {/* Conditional Home Route */}
+                <Route path="/" element={isAdmin ? <AdminDashboard /> : <Dashboard />} />
 
-              {/* Protected Routes */}
-              <Route path="/admin" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
-              <Route path="/devotees" element={isAdmin ? <DevoteeManagement /> : <Navigate to="/" />} />
-              <Route path="/quizzes" element={isAdmin ? <QuizGenerator /> : <Navigate to="/" />} />
+                {/* Protected Routes */}
+                <Route path="/admin" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
+                <Route path="/devotees" element={isAdmin ? <DevoteeManagement /> : <Navigate to="/" />} />
+                <Route path="/quizzes" element={isAdmin ? <QuizGenerator /> : <Navigate to="/" />} />
 
-              {/* Public/Shared Routes */}
-              <Route path="/chanting" element={<ChantingCounter />} />
-              <Route path="/sessions" element={<SessionManagement addNotification={addNotification} />} />
-              <Route path="/homework" element={<HomeworkManagement />} />
-              <Route path="/resources" element={<ResourcesGallery />} />
-              <Route path="/mentorship" element={<MentorshipProgram />} />
-              <Route path="/gita" element={<GitaInsights />} />
-            </Routes>
+                {/* Public/Shared Routes */}
+                <Route path="/chanting" element={<ChantingCounter />} />
+                <Route path="/sessions" element={<SessionManagement addNotification={addNotification} />} />
+                <Route path="/homework" element={<HomeworkManagement />} />
+                <Route path="/resources" element={<ResourcesGallery />} />
+                <Route path="/mentorship" element={<MentorshipProgram />} />
+                <Route path="/gita" element={<GitaInsights />} />
+              </Routes>
+            </div>
           </div>
         </main>
       </div>
-    </Router>
+    </>
   );
 };
 
@@ -293,14 +335,20 @@ const SidebarLink: React.FC<{ to: string; icon: React.ReactNode; label: string }
     <Link
       to={to}
       className={`
-        flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all
-        ${isActive ? 'bg-white/20 text-white shadow-sm' : 'text-orange-50 hover:bg-white/10 hover:text-white'}
+        flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all group
+        ${isActive ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'}
       `}
     >
-      {icon}
+      <div className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>{icon}</div>
       <span>{label}</span>
     </Link>
   );
 };
+
+const App: React.FC = () => (
+  <Router>
+    <AppContent />
+  </Router>
+);
 
 export default App;

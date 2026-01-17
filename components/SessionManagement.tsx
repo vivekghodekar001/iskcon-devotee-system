@@ -4,6 +4,8 @@ import { Calendar, UserCheck, Plus, Clock, MapPin, Users, CheckCircle2, ChevronR
 import { storageService } from '../services/storageService';
 import { Session, UserProfile } from '../types';
 
+import { supabase } from '../lib/supabaseClient';
+
 interface Props {
   addNotification: (title: string, message: string) => void;
 }
@@ -13,6 +15,7 @@ const SessionManagement: React.FC<Props> = ({ addNotification }) => {
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Create Form State
   const [newSession, setNewSession] = useState<Partial<Session>>({
@@ -25,6 +28,20 @@ const SessionManagement: React.FC<Props> = ({ addNotification }) => {
   });
 
   useEffect(() => {
+    const checkRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log("Current User:", user?.email);
+      if (user?.email) {
+        const profile = await storageService.getProfileByEmail(user.email);
+        console.log("Fetched Profile:", profile);
+        setIsAdmin(profile?.role === 'admin');
+        console.log("Is Admin Set To:", profile?.role === 'admin');
+      } else {
+        console.log("No user email found.");
+      }
+    };
+    checkRole();
+
     const load = async () => {
       try {
         const [loadedSessions, loadedStudents] = await Promise.all([
@@ -114,12 +131,14 @@ const SessionManagement: React.FC<Props> = ({ addNotification }) => {
       <div className="lg:col-span-1 space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-slate-900 font-serif">Academy Sessions</h3>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="p-2 btn-divine rounded-lg transition-transform hover:scale-105"
-          >
-            <Plus size={20} />
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="p-2 btn-divine rounded-lg transition-transform hover:scale-105"
+            >
+              <Plus size={20} />
+            </button>
+          )}
         </div>
 
         {showCreateForm && (
@@ -192,7 +211,7 @@ const SessionManagement: React.FC<Props> = ({ addNotification }) => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${session.status === 'Ongoing' ? 'bg-green-100 text-green-700 animate-pulse' :
-                        session.status === 'Completed' ? 'bg-slate-100 text-slate-500' : 'bg-blue-100 text-blue-700'
+                      session.status === 'Completed' ? 'bg-slate-100 text-slate-500' : 'bg-blue-100 text-blue-700'
                       }`}>
                       {session.status}
                     </span>

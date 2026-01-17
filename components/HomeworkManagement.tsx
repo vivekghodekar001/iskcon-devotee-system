@@ -3,12 +3,15 @@ import { BookOpen, Plus, Clock, FileText, CheckCircle2, ChevronRight, X, Upload 
 import { storageService } from '../services/storageService';
 import { Session, Homework } from '../types';
 
+import { supabase } from '../lib/supabaseClient';
+
 const HomeworkManagement: React.FC = () => {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
     const [homeworkList, setHomeworkList] = useState<Homework[]>([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     // Form State
     const [newItem, setNewItem] = useState({
@@ -21,6 +24,14 @@ const HomeworkManagement: React.FC = () => {
     const [submissionLink, setSubmissionLink] = useState('');
 
     useEffect(() => {
+        const checkRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.email) {
+                const profile = await storageService.getProfileByEmail(user.email);
+                setIsAdmin(profile?.role === 'admin');
+            }
+        };
+        checkRole();
         loadSessions();
     }, []);
 
@@ -38,55 +49,6 @@ const HomeworkManagement: React.FC = () => {
         }
     };
 
-    const loadHomework = async (sessionId: string) => {
-        try {
-            const data = await storageService.getHomeworkBySession(sessionId);
-            setHomeworkList(data);
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!activeSessionId) return;
-
-        try {
-            await storageService.createHomework({
-                sessionId: activeSessionId,
-                ...newItem
-            });
-            setShowCreateForm(false);
-            setNewItem({ title: '', description: '', dueDate: '', fileUrl: '' });
-            loadHomework(activeSessionId);
-            alert("Assignment Created Successfully!");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to create assignment");
-        }
-    };
-
-    const handleSubmitWork = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedHomework) return;
-
-        try {
-            // Mock student ID for now - in real app, get from Auth Context
-            const studentId = 'student-123';
-            await storageService.submitHomework({
-                homeworkId: selectedHomework.id,
-                studentId: studentId,
-                fileUrl: submissionLink
-            });
-            setSelectedHomework(null);
-            setSubmissionLink('');
-            alert("Homework Submitted Successfully! Hare Krishna.");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to submit homework.");
-        }
-    };
-
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-100px)]">
             {/* Sidebar: Sessions List */}
@@ -99,8 +61,8 @@ const HomeworkManagement: React.FC = () => {
                         key={session.id}
                         onClick={() => setActiveSessionId(session.id)}
                         className={`p-3 rounded-xl cursor-pointer transition-all border ${activeSessionId === session.id
-                                ? 'bg-teal-50 border-teal-200 shadow-sm'
-                                : 'bg-white/50 border-transparent hover:bg-white'
+                            ? 'bg-teal-50 border-teal-200 shadow-sm'
+                            : 'bg-white/50 border-transparent hover:bg-white'
                             }`}
                     >
                         <p className={`font-bold text-sm ${activeSessionId === session.id ? 'text-[#0F766E]' : 'text-slate-700'}`}>
@@ -118,81 +80,87 @@ const HomeworkManagement: React.FC = () => {
                         <h2 className="text-2xl font-bold text-slate-900 font-serif">Assignments</h2>
                         <p className="text-slate-500 text-sm">Manage homework and study materials</p>
                     </div>
-                    <button
-                        onClick={() => setShowCreateForm(true)}
-                        className="btn-divine px-4 py-2 rounded-xl flex items-center gap-2 font-medium"
-                    >
-                        <Plus size={18} /> New Assignment
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => setShowCreateForm(true)}
+                            className="btn-divine px-4 py-2 rounded-xl flex items-center gap-2 font-medium"
+                        >
+                            <Plus size={18} /> New Assignment
+                        </button>
+                    )}
                 </div>
 
                 {/* Create Form */}
-                {showCreateForm && (
-                    <div className="glass-card p-6 rounded-2xl animate-in slide-in-from-top-4 border-l-4 border-[#0F766E]">
-                        <div className="flex justify-between items-start mb-4">
-                            <h4 className="font-bold text-[#0F766E]">Create New Assignment</h4>
-                            <button onClick={() => setShowCreateForm(false)}><X size={18} className="text-slate-400" /></button>
-                        </div>
-                        <form onSubmit={handleCreate} className="space-y-4">
-                            <input
-                                required
-                                placeholder="Assignment Title"
-                                className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
-                                value={newItem.title}
-                                onChange={e => setNewItem({ ...newItem, title: e.target.value })}
-                            />
-                            <textarea
-                                required
-                                placeholder="Description / Instructions"
-                                className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E] min-h-[100px]"
-                                value={newItem.description}
-                                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                            />
-                            <div className="grid grid-cols-2 gap-4">
-                                <input
-                                    type="date"
-                                    required
-                                    className="w-full px-4 py-2 rounded-xl border-slate-200"
-                                    value={newItem.dueDate}
-                                    onChange={e => setNewItem({ ...newItem, dueDate: e.target.value })}
-                                />
-                                <input
-                                    placeholder="File URL (Optional PDF/Doc)"
-                                    className="w-full px-4 py-2 rounded-xl border-slate-200"
-                                    value={newItem.fileUrl}
-                                    onChange={e => setNewItem({ ...newItem, fileUrl: e.target.value })}
-                                />
+                {
+                    showCreateForm && (
+                        <div className="glass-card p-6 rounded-2xl animate-in slide-in-from-top-4 border-l-4 border-[#0F766E]">
+                            <div className="flex justify-between items-start mb-4">
+                                <h4 className="font-bold text-[#0F766E]">Create New Assignment</h4>
+                                <button onClick={() => setShowCreateForm(false)}><X size={18} className="text-slate-400" /></button>
                             </div>
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
-                                <button type="submit" className="btn-divine px-6 py-2 rounded-lg font-medium">Create Assignment</button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-
-                {/* Submit Modal */}
-                {selectedHomework && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95">
-                            <h3 className="font-bold text-lg mb-2">Submit: {selectedHomework.title}</h3>
-                            <p className="text-sm text-slate-500 mb-4">Paste a link to your work (Google Doc, Drive, etc.)</p>
-                            <form onSubmit={handleSubmitWork} className="space-y-4">
+                            <form onSubmit={handleCreate} className="space-y-4">
                                 <input
                                     required
-                                    placeholder="https://..."
+                                    placeholder="Assignment Title"
                                     className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
-                                    value={submissionLink}
-                                    onChange={e => setSubmissionLink(e.target.value)}
+                                    value={newItem.title}
+                                    onChange={e => setNewItem({ ...newItem, title: e.target.value })}
                                 />
-                                <div className="flex justify-end gap-3">
-                                    <button type="button" onClick={() => setSelectedHomework(null)} className="px-4 py-2 text-slate-500">Cancel</button>
-                                    <button type="submit" className="btn-divine px-6 py-2 rounded-lg font-medium">Submit Work</button>
+                                <textarea
+                                    required
+                                    placeholder="Description / Instructions"
+                                    className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E] min-h-[100px]"
+                                    value={newItem.description}
+                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <input
+                                        type="date"
+                                        required
+                                        className="w-full px-4 py-2 rounded-xl border-slate-200"
+                                        value={newItem.dueDate}
+                                        onChange={e => setNewItem({ ...newItem, dueDate: e.target.value })}
+                                    />
+                                    <input
+                                        placeholder="File URL (Optional PDF/Doc)"
+                                        className="w-full px-4 py-2 rounded-xl border-slate-200"
+                                        value={newItem.fileUrl}
+                                        onChange={e => setNewItem({ ...newItem, fileUrl: e.target.value })}
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-3 pt-2">
+                                    <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
+                                    <button type="submit" className="btn-divine px-6 py-2 rounded-lg font-medium">Create Assignment</button>
                                 </div>
                             </form>
                         </div>
-                    </div>
-                )}
+                    )
+                }
+
+                {/* Submit Modal */}
+                {
+                    selectedHomework && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95">
+                                <h3 className="font-bold text-lg mb-2">Submit: {selectedHomework.title}</h3>
+                                <p className="text-sm text-slate-500 mb-4">Paste a link to your work (Google Doc, Drive, etc.)</p>
+                                <form onSubmit={handleSubmitWork} className="space-y-4">
+                                    <input
+                                        required
+                                        placeholder="https://..."
+                                        className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
+                                        value={submissionLink}
+                                        onChange={e => setSubmissionLink(e.target.value)}
+                                    />
+                                    <div className="flex justify-end gap-3">
+                                        <button type="button" onClick={() => setSelectedHomework(null)} className="px-4 py-2 text-slate-500">Cancel</button>
+                                        <button type="submit" className="btn-divine px-6 py-2 rounded-lg font-medium">Submit Work</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )
+                }
 
                 {/* List */}
                 <div className="grid gap-4">
@@ -235,8 +203,8 @@ const HomeworkManagement: React.FC = () => {
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
