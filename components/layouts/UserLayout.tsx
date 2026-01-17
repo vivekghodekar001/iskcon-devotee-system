@@ -52,7 +52,7 @@ const UserLayout: React.FC = () => {
             `} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src="/logo-new.png" alt="Gita Life" className="w-10 h-10 rounded-full shadow-lg border border-white/20" />
+                        <img src="/logo-new.png" alt="Gita Life" className="w-12 h-12 rounded-full shadow-lg border border-white/20 object-contain bg-white/10" />
                         <div>
                             <h1 className="text-lg font-bold tracking-tight font-serif leading-tight">Gita Life</h1>
                             <p className="text-[10px] opacity-70 font-medium">Devotee Sadhu Sanga</p>

@@ -99,7 +99,7 @@ const Login: React.FC = () => {
                 <div className="h-32 bg-gradient-to-br from-[#0F766E] to-[#115E59] flex items-center justify-center relative overflow-hidden">
                     <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                     <div className="text-center text-white z-10">
-                        <img src="/logo-new.png" alt="Logo" className="w-20 h-20 mx-auto mb-2 rounded-full border-2 border-white/30 shadow-lg" />
+                        <img src="/logo-new.png" alt="Logo" className="w-20 h-20 mx-auto mb-2 rounded-full border-2 border-white/30 shadow-lg object-contain bg-white/10" />
                         <h2 className="text-2xl font-serif font-bold tracking-wide">Gita Life</h2>
                     </div>
                 </div>
