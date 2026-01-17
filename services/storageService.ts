@@ -513,22 +513,34 @@ export const storageService = {
 
   // ATTENDANCE
   getStudentAttendance: async (studentId: string): Promise<Session[]> => {
-    // Note: detailed query for array contains
-    console.log(`Fetching attendance for student: ${studentId}`);
+    console.log(`Fetching attendance for student: ${studentId} (Client-side API)`);
+
+    // Fetch ALL sessions allowing us to filter in JS (bypasses potential array-contains query issues)
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
-      .contains('attendee_ids', [studentId])
       .order('date', { ascending: false });
 
     if (error) {
-      console.error("Error fetching attendance:", error);
+      console.error("Error fetching sessions for attendance:", error);
       throw error;
     }
 
-    console.log(`Found ${data?.length || 0} sessions for student ${studentId}`);
+    if (!data) return [];
 
-    return data.map((d: any) => ({
+    // Filter in memory to be absolutely sure
+    const attendedSessions = data.filter((session: any) => {
+      const ids = session.attendee_ids;
+      // Handle various cases of array storage
+      if (!ids) return false;
+      if (Array.isArray(ids)) return ids.includes(studentId);
+      if (typeof ids === 'string') return ids.includes(studentId); // unexpected but possible with JSON
+      return false;
+    });
+
+    console.log(`[Attendance Debug] Found ${attendedSessions.length} attended sessions out of ${data.length} total sessions.`);
+
+    return attendedSessions.map((d: any) => ({
       id: d.id,
       title: d.title,
       description: d.description,
