@@ -3,6 +3,14 @@ export type StudentCategory = 'Favourite' | 'Regular' | 'Sankalpa' | 'Guest' | '
 export type SessionStatus = 'Upcoming' | 'Ongoing' | 'Completed';
 export type ResourceType = 'book' | 'photo' | 'video' | 'lecture';
 
+export enum InitiationStatus {
+  UNINITIATED = 'Uninitiated',
+  ASPIRING = 'Aspiring',
+  SHELTER = 'Shelter',
+  FIRST_INITIATED = 'First Initiated',
+  SECOND_INITIATED = 'Second Initiated'
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -10,6 +18,9 @@ export interface UserProfile {
   email: string;
   phone: string;
   photoUrl?: string;
+
+  // Status
+  status?: InitiationStatus | string;
 
   // Personal
   dob?: string;
@@ -27,6 +38,7 @@ export interface UserProfile {
   mentorId?: string;
   goals?: string;
   interests?: string[];
+  dailyMalas?: number; // Added for compatibility
 
   createdAt: string;
 }
@@ -113,4 +125,11 @@ export interface QuizResult {
   score: number;
   totalQuestions: number;
   completedAt: string;
+}
+
+export interface ChantingLog {
+  id: string;
+  userEmail: string;
+  date: string;
+  rounds: number;
 }

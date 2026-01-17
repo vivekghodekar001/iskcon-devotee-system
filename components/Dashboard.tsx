@@ -1,18 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, AreaChart, Area
-} from 'recharts';
-import { Users, Calendar, Target, Award, ArrowUpRight, TrendingUp } from 'lucide-react';
-import { storageService } from '../services/storageService';
-import { Devotee, Session } from '../types';
-
-import React, { useEffect, useState } from 'react';
-import { BookOpen, Calendar, Award, Star, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BookOpen, Calendar, Award, Star, ArrowRight, Users, Target, ArrowUpRight, TrendingUp } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { Session } from '../types';
-import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
 const Dashboard: React.FC = () => {
@@ -130,7 +120,5 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
-
-export default Dashboard;
 
 export default Dashboard;

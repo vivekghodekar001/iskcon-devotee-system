@@ -130,3 +130,15 @@ alter table resources disable row level security;
 alter table mentorship_requests disable row level security;
 alter table quizzes disable row level security;
 alter table quiz_results disable row level security;
+
+-- Chanting Logs (Japa Counter)
+create table if not exists chanting_logs (
+  id uuid primary key default uuid_generate_v4(),
+  user_email text not null, -- Simple link by email for now
+  date date not null default current_date,
+  rounds int default 0,
+  created_at timestamp with time zone default now(),
+  unique(user_email, date) -- One entry per user per day
+);
+
+alter table chanting_logs disable row level security;

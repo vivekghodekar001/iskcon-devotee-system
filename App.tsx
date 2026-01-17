@@ -16,7 +16,8 @@ import {
   BrainCircuit,
   Library,
   Users2,
-  ShieldCheck
+  ShieldCheck,
+  Activity
 } from 'lucide-react';
 import Dashboard from './components/Dashboard'; // Student Dashboard
 import AdminDashboard from './components/AdminDashboard'; // Admin Dashboard
@@ -26,7 +27,8 @@ import HomeworkManagement from './components/HomeworkManagement';
 import QuizGenerator from './components/QuizGenerator';
 import ResourcesGallery from './components/ResourcesGallery';
 import MentorshipProgram from './components/MentorshipProgram';
-import StudentRegistration from './components/StudentRegistration';
+import DevoteeManagement from './components/DevoteeManagement';
+import ChantingCounter from './components/ChantingCounter';
 import { storageService } from './services/storageService';
 import { Notification, GitaQuote } from './types';
 import Login from './components/Login';
@@ -164,13 +166,14 @@ const App: React.FC = () => {
             <nav className="flex-1 px-4 space-y-1 mt-4">
               <SidebarLink to="/" icon={<LayoutDashboard size={20} />} label={isAdmin ? "Admin Dashboard" : "My Dashboard"} />
               <SidebarLink to="/sessions" icon={<Calendar size={20} />} label="Sessions" />
+              <SidebarLink to="/chanting" icon={<Activity size={20} />} label="Japa Sadhana" />
               <SidebarLink to="/homework" icon={<FileText size={20} />} label="Assignments" />
 
               {/* Admin Only Links */}
               {isAdmin && (
                 <>
                   <SidebarLink to="/quizzes" icon={<BrainCircuit size={20} />} label="AI Quiz Gen" />
-                  <SidebarLink to="/register" icon={<UserPlus size={20} />} label="Add Devotee" />
+                  <SidebarLink to="/devotees" icon={<UserPlus size={20} />} label="Devotees" />
                 </>
               )}
 
@@ -264,10 +267,11 @@ const App: React.FC = () => {
 
               {/* Protected Routes */}
               <Route path="/admin" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
-              <Route path="/register" element={isAdmin ? <StudentRegistration /> : <Navigate to="/" />} />
+              <Route path="/devotees" element={isAdmin ? <DevoteeManagement /> : <Navigate to="/" />} />
               <Route path="/quizzes" element={isAdmin ? <QuizGenerator /> : <Navigate to="/" />} />
 
               {/* Public/Shared Routes */}
+              <Route path="/chanting" element={<ChantingCounter />} />
               <Route path="/sessions" element={<SessionManagement addNotification={addNotification} />} />
               <Route path="/homework" element={<HomeworkManagement />} />
               <Route path="/resources" element={<ResourcesGallery />} />

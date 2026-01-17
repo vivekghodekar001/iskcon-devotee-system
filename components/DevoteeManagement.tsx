@@ -1,20 +1,26 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Upload, Trash2, Edit2, Search, Filter, Save, X, Users, Heart, Sparkles, Phone, Mail } from 'lucide-react';
-import { Devotee, InitiationStatus } from '../types';
+import { Eye, Camera, Upload, Trash2, Edit2, Search, Filter, Save, X, Users, Heart, Sparkles, Phone, Mail } from 'lucide-react';
+import { UserProfile, InitiationStatus, Session, ChantingLog } from '../types';
 import { storageService } from '../services/storageService';
+import DevoteeProfile from './DevoteeProfile';
 
 interface Props {
   isNew?: boolean;
 }
 
 const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
-  const [devotees, setDevotees] = useState<Devotee[]>([]);
+  const [devotees, setDevotees] = useState<UserProfile[]>([]);
   const [showForm, setShowForm] = useState(isNew || false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Profile View State
+  const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
+  const [viewAttendance, setViewAttendance] = useState<Session[]>([]);
+  const [viewChanting, setViewChanting] = useState<ChantingLog[]>([]);
+
   // Form State
-  const [formData, setFormData] = useState<Partial<Devotee>>({
+  const [formData, setFormData] = useState<Partial<UserProfile>>({
     name: '',
     spiritualName: '',
     email: '',
@@ -30,7 +36,7 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        setDevotees(await storageService.getDevotees());
+        setDevotees(await storageService.getAllProfiles());
       } catch (error) {
         console.error("Failed to load devotees", error);
       }
@@ -48,22 +54,22 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
     try {
       if (isNew) {
         // Create mode
-        const newDevotee: Devotee = {
-          id: crypto.randomUUID(),
+        const newDevotee: any = {
           name: formData.name || '',
           spiritualName: formData.spiritualName || '',
           email: formData.email || '',
           phone: formData.phone || '',
           status: (formData.status as InitiationStatus) || InitiationStatus.UNINITIATED,
-          photo: formData.photo || '',
-          joinedAt: new Date().toISOString(),
-          hobbies: formData.hobbies || '',
-          dailyMalas: Number(formData.dailyMalas) || 0
+          photoUrl: formData.photoUrl || '',
+          hobbies: formData.hobbies ? (Array.isArray(formData.hobbies) ? formData.hobbies : [formData.hobbies]) : [],
+          dailyMalas: Number(formData.dailyMalas) || 0,
+          role: 'student',
+          category: 'Regular'
         };
-        await storageService.createDevotee(newDevotee);
-        // Optimistic update not needed as we reload on closing form or use local state
-        // But let's update list
-        setDevotees(prev => [...prev, newDevotee]);
+        await storageService.createProfile(newDevotee);
+        // Reload list
+        const updatedList = await storageService.getAllProfiles();
+        setDevotees(updatedList);
       }
       // Note: Edit is not implemented in UI yet
 
@@ -82,8 +88,8 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
       email: '',
       phone: '',
       status: InitiationStatus.UNINITIATED,
-      photo: '',
-      hobbies: '',
+      photoUrl: '',
+      hobbies: [],
       dailyMalas: 16
     });
   };
@@ -93,7 +99,7 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, photo: reader.result as string });
+        setFormData({ ...formData, photoUrl: reader.result as string });
       };
       reader.readAsDataURL(file);
     }
@@ -102,7 +108,7 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
   const deleteDevotee = async (id: string) => {
     if (confirm('Are you sure you want to delete this devotee record?')) {
       try {
-        await storageService.deleteDevotee(id);
+        await storageService.deleteProfile(id);
         setDevotees(prev => prev.filter(d => d.id !== id));
       } catch (error) {
         console.error("Failed to delete", error);
@@ -149,8 +155,8 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
                 onClick={() => fileInputRef.current?.click()}
                 className="w-32 h-32 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden relative group shrink-0 shadow-inner"
               >
-                {formData.photo ? (
-                  <img src={formData.photo} alt="Preview" className="w-full h-full object-cover" />
+                {formData.photoUrl ? (
+                  <img src={formData.photoUrl} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
                   <>
                     <Camera className="text-slate-400 mb-2 group-hover:text-orange-500" size={32} />
@@ -260,7 +266,7 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
               <textarea
                 rows={3}
                 value={formData.hobbies}
-                onChange={e => setFormData({ ...formData, hobbies: e.target.value })}
+                onChange={e => setFormData({ ...formData, hobbies: [e.target.value] })}
                 placeholder="Cooking, Playing Khol/Mridanga, Teaching, Gardening..."
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all resize-none"
               />
@@ -319,8 +325,8 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-slate-100 overflow-hidden flex-shrink-0 shadow-sm">
-                          {devotee.photo ? (
-                            <img src={devotee.photo} className="w-full h-full object-cover" />
+                          {devotee.photoUrl ? (
+                            <img src={devotee.photoUrl} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400">
                               <Users size={20} />
@@ -334,9 +340,9 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${devotee.status.includes('Initiated') ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${devotee.status && typeof devotee.status === 'string' && devotee.status.includes('Initiated') ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
                         }`}>
-                        {devotee.status}
+                        {devotee.status || 'Uninitiated'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -363,6 +369,21 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
                           <Edit2 size={16} />
                         </button>
                         <button
+                          onClick={async () => {
+                            setSelectedProfile(devotee);
+                            try {
+                              const att = await storageService.getStudentAttendance(devotee.id);
+                              const chant = await storageService.getChantingHistory(devotee.email);
+                              setViewAttendance(att);
+                              setViewChanting(chant);
+                            } catch (e) { console.error(e); }
+                          }}
+                          className="p-2 text-slate-400 hover:text-teal-500 hover:bg-teal-50 rounded-lg transition-colors"
+                          title="View Details"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
                           onClick={() => deleteDevotee(devotee.id)}
                           className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
@@ -386,6 +407,14 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
             </table>
           </div>
         </div>
+      )}
+      {selectedProfile && (
+        <DevoteeProfile
+          profile={selectedProfile}
+          attendance={viewAttendance}
+          chantingHistory={viewChanting}
+          onClose={() => setSelectedProfile(null)}
+        />
       )}
     </div>
   );

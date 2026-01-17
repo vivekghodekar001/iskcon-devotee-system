@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { Session, Notification, UserProfile } from '../types';
+import { Session, Notification, UserProfile, ChantingLog } from '../types';
 
 export const storageService = {
   // PROFILES (Student ERP)
@@ -30,6 +30,11 @@ export const storageService = {
 
     if (error) throw error;
     return data;
+  },
+
+  deleteProfile: async (id: string) => {
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    if (error) throw error;
   },
 
   getProfileByEmail: async (email: string): Promise<UserProfile | null> => {
@@ -252,6 +257,11 @@ export const storageService = {
     if (error) throw error;
   },
 
+  deleteResource: async (id: string) => {
+    const { error } = await supabase.from('resources').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   // MENTORSHIP
   getMentors: async (): Promise<any[]> => {
     const { data, error } = await supabase
@@ -349,5 +359,78 @@ export const storageService = {
       .update({ is_read: true })
       .eq('is_read', false);
     if (error) throw error;
+  },
+
+  // CHANTING LOGS
+  getChantingLog: async (email: string, date: string): Promise<ChantingLog | null> => {
+    const { data, error } = await supabase
+      .from('chanting_logs')
+      .select('*')
+      .eq('user_email', email)
+      .eq('date', date)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      userEmail: data.user_email,
+      date: data.date,
+      rounds: data.rounds
+    };
+  },
+
+  updateChantingLog: async (email: string, date: string, rounds: number) => {
+    // Upsert logic
+    const { error } = await supabase
+      .from('chanting_logs')
+      .upsert({
+        user_email: email,
+        date: date,
+        rounds: rounds
+      }, { onConflict: 'user_email, date' });
+
+    if (error) throw error;
+  },
+
+  getChantingHistory: async (email: string): Promise<ChantingLog[]> => {
+    const { data, error } = await supabase
+      .from('chanting_logs')
+      .select('*')
+      .eq('user_email', email)
+      .order('date', { ascending: false });
+
+    if (error) throw error;
+    return data.map((d: any) => ({
+      id: d.id,
+      userEmail: d.user_email,
+      date: d.date,
+      rounds: d.rounds
+    }));
+  },
+
+  // ATTENDANCE
+  getStudentAttendance: async (studentId: string): Promise<Session[]> => {
+    // Note: detailed query for array contains
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .contains('attendee_ids', [studentId])
+      .order('date', { ascending: false });
+
+    if (error) throw error;
+
+    return data.map((d: any) => ({
+      id: d.id,
+      title: d.title,
+      description: d.description,
+      date: d.date,
+      location: d.location,
+      facilitator: d.facilitator,
+      type: d.type,
+      status: d.status,
+      attendeeIds: d.attendee_ids || []
+    }));
   }
 };
