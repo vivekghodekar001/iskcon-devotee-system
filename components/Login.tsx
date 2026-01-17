@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Phone, User as UserIcon, ArrowRight } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import SuccessModal from './common/SuccessModal';
 
 const Login: React.FC = () => {
@@ -20,9 +21,6 @@ const Login: React.FC = () => {
         setIsSignUp(!isSignUp);
         setFormData({ email: '', password: '', fullName: '', phone: '' });
     };
-
-    import { Capacitor } from '@capacitor/core';
-
     const handleGoogleLogin = async () => {
         try {
             setLoading(true);
