@@ -5,7 +5,7 @@ import {
     FileText, Library, Users2, LogOut, Menu, X, Bell, Brain
 } from 'lucide-react';
 // ...
-<NavLink to="/app/my-quizzes" icon={<Brain size={20} />} label="My Quizzes" /> {/* Added Link */ }
+
 import { supabase } from '../../lib/supabaseClient';
 
 const UserLayout: React.FC = () => {
