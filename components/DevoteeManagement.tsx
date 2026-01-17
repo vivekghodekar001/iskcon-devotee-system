@@ -377,17 +377,22 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
                             setViewAttendance([]); // Clear previous
                             setViewChanting([]); // Clear previous
 
+                            // Fetch attendance independently
                             try {
-                              const [att, chant] = await Promise.all([
-                                storageService.getStudentAttendance(devotee.id),
-                                storageService.getChantingHistory(devotee.email)
-                              ]);
+                              const att = await storageService.getStudentAttendance(devotee.id);
                               setViewAttendance(att);
+                            } catch (e) {
+                              console.error("Failed to fetch attendance", e);
+                            }
+
+                            // Fetch chanting history independently
+                            try {
+                              const chant = await storageService.getChantingHistory(devotee.email);
                               setViewChanting(chant);
                             } catch (e) {
-                              console.error("Failed to fetch devotee details", e);
+                              console.error("Failed to fetch chanting history", e);
                             } finally {
-                              setIsLoadingProfile(false); // End loading
+                              setIsLoadingProfile(false);
                             }
                           }}
                           className="p-2 text-slate-400 hover:text-teal-500 hover:bg-teal-50 rounded-lg transition-colors"
