@@ -514,13 +514,19 @@ export const storageService = {
   // ATTENDANCE
   getStudentAttendance: async (studentId: string): Promise<Session[]> => {
     // Note: detailed query for array contains
+    console.log(`Fetching attendance for student: ${studentId}`);
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
       .contains('attendee_ids', [studentId])
       .order('date', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching attendance:", error);
+      throw error;
+    }
+
+    console.log(`Found ${data?.length || 0} sessions for student ${studentId}`);
 
     return data.map((d: any) => ({
       id: d.id,

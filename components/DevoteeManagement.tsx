@@ -18,6 +18,7 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
   const [viewAttendance, setViewAttendance] = useState<Session[]>([]);
   const [viewChanting, setViewChanting] = useState<ChantingLog[]>([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<Partial<UserProfile>>({
@@ -372,12 +373,22 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
                         <button
                           onClick={async () => {
                             setSelectedProfile(devotee);
+                            setIsLoadingProfile(true); // Start loading
+                            setViewAttendance([]); // Clear previous
+                            setViewChanting([]); // Clear previous
+
                             try {
-                              const att = await storageService.getStudentAttendance(devotee.id);
-                              const chant = await storageService.getChantingHistory(devotee.email);
+                              const [att, chant] = await Promise.all([
+                                storageService.getStudentAttendance(devotee.id),
+                                storageService.getChantingHistory(devotee.email)
+                              ]);
                               setViewAttendance(att);
                               setViewChanting(chant);
-                            } catch (e) { console.error(e); }
+                            } catch (e) {
+                              console.error("Failed to fetch devotee details", e);
+                            } finally {
+                              setIsLoadingProfile(false); // End loading
+                            }
                           }}
                           className="p-2 text-slate-400 hover:text-teal-500 hover:bg-teal-50 rounded-lg transition-colors"
                           title="View Details"
@@ -414,6 +425,7 @@ const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
           profile={selectedProfile}
           attendance={viewAttendance}
           chantingHistory={viewChanting}
+          isLoading={isLoadingProfile}
           onClose={() => setSelectedProfile(null)}
         />
       )}

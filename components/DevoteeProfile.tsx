@@ -15,10 +15,11 @@ interface DevoteeProfileProps {
     profile: UserProfile;
     attendance: Session[];
     chantingHistory: ChantingLog[];
+    isLoading?: boolean;
     onClose: () => void;
 }
 
-const DevoteeProfile: React.FC<DevoteeProfileProps> = ({ profile, attendance, chantingHistory, onClose }) => {
+const DevoteeProfile: React.FC<DevoteeProfileProps> = ({ profile, attendance, chantingHistory, isLoading, onClose }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'attendance' | 'chanting'>('overview');
 
     // Calculate chanting stats
@@ -126,8 +127,14 @@ const DevoteeProfile: React.FC<DevoteeProfileProps> = ({ profile, attendance, ch
 
                     {activeTab === 'attendance' && (
                         <div className="space-y-6">
-                            <h3 className="font-bold text-lg text-slate-800">Session Attendance ({sessionsAttended})</h3>
-                            {attendance.length > 0 ? (
+                            <h3 className="font-bold text-lg text-slate-800">Session Attendance ({isLoading ? '...' : sessionsAttended})</h3>
+                            {isLoading ? (
+                                <div className="space-y-4 animate-pulse">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="h-16 bg-slate-200 rounded-xl w-full"></div>
+                                    ))}
+                                </div>
+                            ) : attendance.length > 0 ? (
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                                     <table className="w-full text-sm text-left">
                                         <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
@@ -162,41 +169,49 @@ const DevoteeProfile: React.FC<DevoteeProfileProps> = ({ profile, attendance, ch
 
                     {activeTab === 'chanting' && (
                         <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-300">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <StatCard label="Total Rounds" value={totalRounds} icon={<Activity className="text-orange-500" />} />
-                                <StatCard label="Avg. Rounds/Day" value={averageRounds} icon={<Clock className="text-blue-500" />} />
-                                <StatCard label="Current Streak" value="--" icon={<Award className="text-purple-500" />} />
-                            </div>
-
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                                <h4 className="font-bold text-slate-800 mb-6">Last 14 Days Activity</h4>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={chartData}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                                            <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                                            <Bar dataKey="rounds" fill="#0F766E" radius={[4, 4, 0, 0]} barSize={40} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                            {isLoading ? (
+                                <div className="h-64 bg-slate-100 rounded-2xl animate-pulse flex items-center justify-center">
+                                    <div className="text-slate-400 font-medium">Loading history...</div>
                                 </div>
-                            </div>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <StatCard label="Total Rounds" value={totalRounds} icon={<Activity className="text-orange-500" />} />
+                                        <StatCard label="Avg. Rounds/Day" value={averageRounds} icon={<Clock className="text-blue-500" />} />
+                                        <StatCard label="Current Streak" value="--" icon={<Award className="text-purple-500" />} />
+                                    </div>
 
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                                <div className="p-4 bg-slate-50 border-b border-slate-100 font-bold text-slate-700">Detailed History</div>
-                                <div className="max-h-60 overflow-y-auto">
-                                    {chantingHistory.map(log => (
-                                        <div key={log.id} className="flex justify-between items-center p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                                            <div className="font-medium text-slate-700">{new Date(log.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                                            <div className="font-bold text-teal-700 text-lg flex items-center gap-2">
-                                                {log.rounds} <span className="text-xs font-normal text-slate-400 uppercase">Rounds</span>
-                                            </div>
+                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                        <h4 className="font-bold text-slate-800 mb-6">Last 14 Days Activity</h4>
+                                        <div className="h-64">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={chartData}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                                                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                                                    <Bar dataKey="rounds" fill="#0F766E" radius={[4, 4, 0, 0]} barSize={40} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
                                         </div>
-                                    ))}
-                                    {chantingHistory.length === 0 && <EmptyState message="No chanting logs found." />}
-                                </div>
-                            </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                        <div className="p-4 bg-slate-50 border-b border-slate-100 font-bold text-slate-700">Detailed History</div>
+                                        <div className="max-h-60 overflow-y-auto">
+                                            {chantingHistory.map(log => (
+                                                <div key={log.id} className="flex justify-between items-center p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
+                                                    <div className="font-medium text-slate-700">{new Date(log.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                                                    <div className="font-bold text-teal-700 text-lg flex items-center gap-2">
+                                                        {log.rounds} <span className="text-xs font-normal text-slate-400 uppercase">Rounds</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {chantingHistory.length === 0 && <EmptyState message="No chanting logs found." />}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
