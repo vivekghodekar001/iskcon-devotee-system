@@ -32,12 +32,6 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Deep link support for Capacitor
-let CapacitorApp: any = null;
-try {
-  CapacitorApp = require('@capacitor/app').App;
-} catch { }
-
 const AppContent: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -45,12 +39,14 @@ const AppContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Handle Deep Links (Google Login)
-    if (CapacitorApp) {
-      CapacitorApp.addListener('appUrlOpen', (data: any) => {
+    // Handle Deep Links (Capacitor - loaded dynamically to avoid breaking web)
+    let capApp: any = null;
+    import('@capacitor/app').then(mod => {
+      capApp = mod.App;
+      capApp.addListener('appUrlOpen', (data: any) => {
         console.log('App opened with URL:', data.url);
       });
-    }
+    }).catch(() => { });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -75,7 +71,7 @@ const AppContent: React.FC = () => {
 
     return () => {
       subscription.unsubscribe();
-      if (CapacitorApp) CapacitorApp.removeAllListeners();
+      if (capApp) capApp.removeAllListeners();
     };
   }, []);
 
