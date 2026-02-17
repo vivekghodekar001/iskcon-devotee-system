@@ -1,469 +1,217 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import { Eye, Camera, Upload, Trash2, Edit2, Search, Filter, Save, X, Users, Heart, Sparkles, Phone, Mail } from 'lucide-react';
-import { UserProfile, InitiationStatus, Session, ChantingLog } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Users, Search, Plus, X, Edit2, Trash2, Eye, Mail, Phone, MapPin, Filter } from 'lucide-react';
 import { storageService } from '../services/storageService';
+import { UserProfile, StudentCategory } from '../types';
 import DevoteeProfile from './DevoteeProfile';
 
-interface Props {
-  isNew?: boolean;
-}
+const CATEGORIES: StudentCategory[] = ['Favourite', 'Regular', 'Sankalpa', 'Guest', 'Volunteer', 'Advanced seeker'];
 
-const DevoteeManagement: React.FC<Props> = ({ isNew }) => {
-  const [devotees, setDevotees] = useState<UserProfile[]>([]);
-  const [showForm, setShowForm] = useState(isNew || false);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Profile View State
+const DevoteeManagement: React.FC = () => {
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState<string>('all');
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
-  const [viewAttendance, setViewAttendance] = useState<Session[]>([]);
-  const [viewChanting, setViewChanting] = useState<ChantingLog[]>([]);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Form State
-  const [formData, setFormData] = useState<Partial<UserProfile>>({
-    name: '',
-    spiritualName: '',
-    email: '',
-    phone: '',
-    status: InitiationStatus.UNINITIATED,
-    photo: '',
-    hobbies: '',
-    dailyMalas: 16
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({
+    name: '', email: '', phone: '', spiritualName: '',
+    category: 'Regular' as StudentCategory, branch: '', nativePlace: ''
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { load(); }, []);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setDevotees(await storageService.getAllProfiles());
-      } catch (error) {
-        console.error("Failed to load devotees", error);
-      }
-    };
-    load();
-  }, [showForm]); // Reload when returning from form
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email || !formData.phone) {
-      alert("Please fill in all mandatory fields (Name, Email, Phone)");
-      return;
-    }
-
+  const load = async () => {
     try {
-      const idToUse = editingId || crypto.randomUUID();
-      const devoteeData: any = {
-        id: idToUse,
-        name: formData.name || '',
-        spiritualName: formData.spiritualName || '',
-        email: formData.email || '',
-        phone: formData.phone || '',
-        status: (formData.status as InitiationStatus) || InitiationStatus.UNINITIATED,
-        photoUrl: formData.photoUrl || '',
-        hobbies: formData.hobbies ? (Array.isArray(formData.hobbies) ? formData.hobbies : [formData.hobbies]) : [],
-        dailyMalas: Number(formData.dailyMalas) || 0,
+      const p = await storageService.getAllProfiles();
+      setProfiles(p);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await storageService.createProfile({
+        ...form,
         role: 'student',
-        category: 'Regular'
-      };
+      } as any);
+      setShowAdd(false);
+      setForm({ name: '', email: '', phone: '', spiritualName: '', category: 'Regular', branch: '', nativePlace: '' });
+      load();
+    } catch (err) { console.error(err); alert('Failed to add devotee'); }
+  };
 
-      await storageService.createProfile(devoteeData);
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to remove this devotee?')) return;
+    try {
+      await storageService.deleteProfile(id);
+      setProfiles(prev => prev.filter(p => p.id !== id));
+      if (selectedProfile?.id === id) setSelectedProfile(null);
+    } catch (err) { console.error(err); alert('Failed to delete'); }
+  };
 
-      // Reload list
-      const updatedList = await storageService.getAllProfiles();
-      setDevotees(updatedList);
+  const filtered = profiles.filter(p => {
+    if (catFilter !== 'all' && p.category !== catFilter) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return p.name?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q) || p.spiritualName?.toLowerCase().includes(q);
+    }
+    return true;
+  });
 
-      setShowForm(false);
-      resetForm();
-    } catch (error: any) {
-      console.error("Failed to save devotee", error);
-      alert(`Failed to save devotee: ${error.message || error.error_description || "Unknown error"}`);
+  const catColor = (cat: string) => {
+    switch (cat) {
+      case 'Favourite': return 'badge-saffron';
+      case 'Sankalpa': return 'badge-purple';
+      case 'Volunteer': return 'badge-green';
+      case 'Advanced seeker': return 'badge-teal';
+      case 'Guest': return 'badge-blue';
+      default: return 'badge-gray';
     }
   };
 
-  const handleEdit = (devotee: UserProfile) => {
-    setFormData({
-      name: devotee.name,
-      spiritualName: devotee.spiritualName,
-      email: devotee.email,
-      phone: devotee.phone,
-      status: devotee.status as InitiationStatus,
-      photoUrl: devotee.photoUrl,
-      hobbies: devotee.hobbies && devotee.hobbies.length > 0 ? devotee.hobbies[0] : '',
-      dailyMalas: devotee.dailyMalas
-    });
-    setEditingId(devotee.id);
-    setShowForm(true);
-  };
-
-  const resetForm = () => {
-    setEditingId(null);
-    setFormData({
-      name: '',
-      spiritualName: '',
-      email: '',
-      phone: '',
-      status: InitiationStatus.UNINITIATED,
-      photoUrl: '',
-      hobbies: [],
-      dailyMalas: 16
-    });
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, photoUrl: reader.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const deleteDevotee = async (id: string) => {
-    if (confirm('Are you sure you want to delete this devotee record?')) {
-      try {
-        await storageService.deleteProfile(id);
-        setDevotees(prev => prev.filter(d => d.id !== id));
-      } catch (error) {
-        console.error("Failed to delete", error);
-        alert("Failed to delete devotee");
-      }
-    }
-  };
-
-  const filtered = devotees.filter(d =>
-    d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (d.spiritualName && d.spiritualName.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  if (loading) {
+    return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-3 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>;
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 animate-in">
+      <div className="page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Devotee Community</h2>
-          <p className="text-slate-500">Manage and connect with our spiritual family.</p>
+          <h1>Devotee Management</h1>
+          <p>{profiles.length} devotees in the community</p>
         </div>
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center justify-center gap-2 bg-[#FF8C00] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-orange-600 shadow-md transition-all active:scale-95"
-          >
-            <PlusCircle size={20} />
-            Register Devotee
-          </button>
+        <button onClick={() => setShowAdd(true)} className="btn-divine">
+          <Plus size={18} /> Add Devotee
+        </button>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input className="search-input" placeholder="Search by name, email, or spiritual name..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <select className="select-divine w-auto min-w-[150px]" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
+          <option value="all">All Categories</option>
+          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+
+      <div className="flex gap-6">
+        {/* Profiles Grid/List */}
+        <div className="flex-1">
+          {filtered.length === 0 ? (
+            <div className="empty-state"><Users size={48} /><p>No devotees found</p></div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map(p => (
+                <div
+                  key={p.id}
+                  className={`glass-card-static p-4 cursor-pointer transition-all hover:shadow-md ${selectedProfile?.id === p.id ? 'ring-2 ring-divine-500 shadow-divine' : ''
+                    }`}
+                  onClick={() => setSelectedProfile(selectedProfile?.id === p.id ? null : p)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-divine-gradient flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-sm">
+                      {p.name?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-900 text-sm truncate">{p.name}</p>
+                      {p.spiritualName && <p className="text-xs text-divine-600 font-medium truncate">{p.spiritualName}</p>}
+                      <span className={`badge ${catColor(p.category)} text-[10px] mt-1`}>{p.category}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+                    {p.email && <p className="flex items-center gap-1.5 text-xs text-slate-500 truncate"><Mail size={12} /> {p.email}</p>}
+                    {p.phone && <p className="flex items-center gap-1.5 text-xs text-slate-500"><Phone size={12} /> {p.phone}</p>}
+                    {p.branch && <p className="flex items-center gap-1.5 text-xs text-slate-500"><MapPin size={12} /> {p.branch}</p>}
+                  </div>
+                  <div className="flex justify-end gap-1 mt-3">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Profile Panel */}
+        {selectedProfile && (
+          <div className="hidden lg:block w-96 flex-shrink-0">
+            <DevoteeProfile
+              profile={selectedProfile}
+              onClose={() => setSelectedProfile(null)}
+            />
+          </div>
         )}
       </div>
 
-      {showForm ? (
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-300 max-w-4xl mx-auto mb-12">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-            <h3 className="text-lg font-bold text-slate-900">Enrollment Portal</h3>
-            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
-              <X size={24} />
-            </button>
-          </div>
-          <form onSubmit={handleSave} className="p-8 space-y-8">
-            {/* Header & Photo */}
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="w-32 h-32 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden relative group shrink-0 shadow-inner"
-              >
-                {formData.photoUrl ? (
-                  <img src={formData.photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <>
-                    <Camera className="text-slate-400 mb-2 group-hover:text-orange-500" size={32} />
-                    <span className="text-[10px] font-bold text-slate-400 group-hover:text-orange-500 uppercase">Devotee Photo</span>
-                  </>
-                )}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <Upload className="text-white" size={24} />
-                </div>
-              </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                className="hidden"
-                accept="image/*"
-              />
-              <div className="space-y-1 text-center md:text-left">
-                <h4 className="text-xl font-bold text-slate-900">Personal Information</h4>
-                <p className="text-sm text-slate-500 italic">"By serving the devotees, one satisfies the Supreme Lord."</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                  <Users size={14} /> Legal Name*
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. John Smith"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles size={14} /> Spiritual Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.spiritualName}
-                  onChange={e => setFormData({ ...formData, spiritualName: e.target.value })}
-                  placeholder="e.g. Jagannath Das"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={e => setFormData({ ...formData, status: e.target.value as InitiationStatus })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                >
-                  {Object.values(InitiationStatus).map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                  <Mail size={14} /> Email Address*
-                </label>
-                <input
-                  required
-                  type="email"
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="devotee@example.com"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                  <Phone size={14} /> Mobile Number*
-                </label>
-                <input
-                  required
-                  type="tel"
-                  value={formData.phone}
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+91 9876543210"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles size={14} /> Daily Rounds (Malas)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="64"
-                  value={formData.dailyMalas}
-                  onChange={e => setFormData({ ...formData, dailyMalas: Number(e.target.value) })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Heart size={14} /> Hobbies & Areas of Interest (Seva Interests)
-              </label>
-              <textarea
-                rows={3}
-                value={formData.hobbies}
-                onChange={e => setFormData({ ...formData, hobbies: [e.target.value] })}
-                placeholder="Cooking, Playing Khol/Mridanga, Teaching, Gardening..."
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all resize-none"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); resetForm(); }}
-                className="px-6 py-3 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex items-center gap-2 bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-600 shadow-md shadow-orange-200 transition-all active:scale-95"
-              >
-                <Save size={20} />
-                Complete Registration
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search by name, spiritual name or email..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-              />
-            </div>
-            <button className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg">
-              <Filter size={18} />
-              Filters
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest">
-                <tr>
-                  <th className="px-6 py-4 text-left">Devotee Profile</th>
-                  <th className="px-6 py-4 text-left">Initiation</th>
-                  <th className="px-6 py-4 text-left">Sadhana (Malas)</th>
-                  <th className="px-6 py-4 text-left">Contact Info</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filtered.map(devotee => (
-                  <tr key={devotee.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-100 overflow-hidden flex-shrink-0 shadow-sm">
-                          {devotee.photoUrl ? (
-                            <img src={devotee.photoUrl} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400">
-                              <Users size={20} />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900 leading-none mb-1">{devotee.name}</p>
-                          {devotee.spiritualName && <p className="text-[11px] text-slate-600 font-bold tracking-tight uppercase">{devotee.spiritualName}</p>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${devotee.status && typeof devotee.status === 'string' && devotee.status.includes('Initiated') ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                        }`}>
-                        {devotee.status || 'Uninitiated'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-[#FF8C00] font-black text-xs border border-orange-100">
-                          {devotee.dailyMalas || 0}
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Rounds</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <p className="text-xs text-slate-700 font-medium flex items-center gap-1.5">
-                          <Phone size={10} className="text-slate-400" /> {devotee.phone}
-                        </p>
-                        <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                          <Mail size={10} className="text-slate-400" /> {devotee.email}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEdit(devotee)}
-                          className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={async () => {
-                            setSelectedProfile(devotee);
-                            setIsLoadingProfile(true); // Start loading
-                            setViewAttendance([]); // Clear previous
-                            setViewChanting([]); // Clear previous
-
-                            // Fetch attendance independently
-                            try {
-                              const att = await storageService.getStudentAttendance(devotee.id);
-                              setViewAttendance(att);
-                            } catch (e) {
-                              console.error("Failed to fetch attendance", e);
-                            }
-
-                            // Fetch chanting history independently
-                            try {
-                              const chant = await storageService.getChantingHistory(devotee.email);
-                              setViewChanting(chant);
-                            } catch (e) {
-                              console.error("Failed to fetch chanting history", e);
-                            } finally {
-                              setIsLoadingProfile(false);
-                            }
-                          }}
-                          className="p-2 text-slate-400 hover:text-teal-500 hover:bg-teal-50 rounded-lg transition-colors"
-                          title="View Details"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          onClick={() => deleteDevotee(devotee.id)}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-16 text-center">
-                      <div className="flex flex-col items-center">
-                        <Users size={40} className="text-slate-200 mb-3" />
-                        <p className="text-slate-400 font-medium italic">No devotees match your search.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      {/* Mobile Profile Modal */}
+      {selectedProfile && (
+        <div className="lg:hidden modal-overlay" onClick={() => setSelectedProfile(null)}>
+          <div className="modal-content-lg max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <DevoteeProfile profile={selectedProfile} onClose={() => setSelectedProfile(null)} />
           </div>
         </div>
       )}
-      {selectedProfile && (
-        <DevoteeProfile
-          profile={selectedProfile}
-          attendance={viewAttendance}
-          chantingHistory={viewChanting}
-          isLoading={isLoadingProfile}
-          onClose={() => setSelectedProfile(null)}
-        />
+
+      {/* Add Devotee Modal */}
+      {showAdd && (
+        <div className="modal-overlay" onClick={() => setShowAdd(false)}>
+          <div className="modal-content p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-slate-900">Add New Devotee</h2>
+              <button onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleAdd} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Full Name *</label>
+                  <input className="input-divine" placeholder="Full name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Spiritual Name</label>
+                  <input className="input-divine" placeholder="Initiated name" value={form.spiritualName} onChange={e => setForm({ ...form, spiritualName: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
+                  <input type="email" className="input-divine" placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Phone</label>
+                  <input className="input-divine" placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Category</label>
+                  <select className="select-divine" value={form.category} onChange={e => setForm({ ...form, category: e.target.value as StudentCategory })}>
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Branch</label>
+                  <input className="input-divine" placeholder="e.g. Pune" value={form.branch} onChange={e => setForm({ ...form, branch: e.target.value })} />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowAdd(false)} className="btn-ghost flex-1">Cancel</button>
+                <button type="submit" className="btn-divine flex-1">Add Devotee</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
 };
-
-// Custom PlusCircle component
-const PlusCircle: React.FC<{ size?: number }> = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="8" x2="12" y2="16" />
-    <line x1="8" y1="12" x2="16" y2="12" />
-  </svg>
-);
 
 export default DevoteeManagement;

@@ -1,363 +1,227 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, UserCheck, Plus, Clock, MapPin, Users, CheckCircle2, ChevronRight, X, Sparkles } from 'lucide-react';
+import { Calendar, UserCheck, Plus, Clock, MapPin, Users, CheckCircle2, X, ChevronDown, Search } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { Session, UserProfile } from '../types';
 
-interface Props {
-  mode: 'admin' | 'student';
-}
+interface Props { mode: 'admin' | 'student'; }
 
 const SessionManagement: React.FC<Props> = ({ mode }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [students, setStudents] = useState<UserProfile[]>([]);
-  const [activeSession, setActiveSession] = useState<Session | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const isAdmin = mode === 'admin';
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [filter, setFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
 
-  // Create Form State
-  const [newSession, setNewSession] = useState<Partial<Session>>({
-    title: '',
-    date: new Date().toISOString().split('T')[0],
-    location: '',
-    facilitator: '',
-    type: 'Regular',
-    status: 'Upcoming'
+  const [form, setForm] = useState({
+    title: '', description: '', date: '', location: '', facilitator: '',
+    type: 'Regular' as Session['type'], status: 'Upcoming' as Session['status']
   });
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [loadedSessions, loadedStudents] = await Promise.all([
-          storageService.getSessions(),
-          storageService.getAllProfiles()
-        ]);
-        setSessions(loadedSessions);
-        setStudents(loadedStudents);
-      } catch (error) {
-        console.error("Failed to load data", error);
-      }
-    };
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
+
+  const load = async () => {
+    try {
+      const [s, p] = await Promise.all([
+        storageService.getSessions(),
+        storageService.getAllProfiles()
+      ]);
+      setSessions(s);
+      setProfiles(p.filter(pr => pr.role !== 'admin'));
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
 
   const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSession.title) return;
-
-    const session: Session = {
-      id: crypto.randomUUID(),
-      title: newSession.title || '',
-      description: newSession.description,
-      date: newSession.date || new Date().toISOString(),
-      location: newSession.location || 'Temple Hall',
-      facilitator: newSession.facilitator || 'Unknown',
-      type: newSession.type as any || 'Regular',
-      status: newSession.status as any || 'Upcoming',
-      attendeeIds: []
-    };
-
-    // Optimistic Update REMOVED to ensure data persistence
-    // setSessions(updated);
-
     try {
-      // Wait for backend confirmation
-      const savedSession = await storageService.createSession(session);
-
-      // Update local state ONLY after success
-      setSessions(prev => [session, ...prev]);
-      setShowCreateForm(false);
-
-      alert("Session saved successfully!"); // Explicit feedback
-
-      await storageService.createNotification({
+      const newSession: Session = {
         id: crypto.randomUUID(),
-        title: 'New Session Created',
-        message: `Session "${session.title}" has been scheduled.`,
-        timestamp: new Date(),
-        isRead: false,
-        type: 'system'
-      });
-      // Reset form
-      setNewSession({
-        title: '',
-        date: new Date().toISOString().split('T')[0],
-        location: '',
-        facilitator: '',
-        type: 'Regular',
-        status: 'Upcoming'
-      });
-    } catch (error: any) {
-      console.error("Failed to create session", error);
-      alert(`Failed to create session: ${error.message || error.error_description || "Unknown error"}`);
-    }
+        ...form,
+        attendeeIds: []
+      };
+      await storageService.createSession(newSession);
+      setSessions(prev => [newSession, ...prev]);
+      setShowForm(false);
+      setForm({ title: '', description: '', date: '', location: '', facilitator: '', type: 'Regular', status: 'Upcoming' });
+    } catch (err) { console.error(err); alert('Failed to create session'); }
   };
 
   const toggleAttendance = async (studentId: string) => {
-    if (!activeSession) return;
-    // Only admins can mark attendance
-    if (!isAdmin) return;
-
-    const isAttending = activeSession.attendeeIds.includes(studentId);
-    const updatedAttendeeIds = isAttending
-      ? activeSession.attendeeIds.filter(id => id !== studentId)
-      : [...activeSession.attendeeIds, studentId];
-
-    const updatedSession = { ...activeSession, attendeeIds: updatedAttendeeIds };
-    const updatedSessions = sessions.map(s => s.id === activeSession.id ? updatedSession : s);
-
-    // Optimistic UI
-    setActiveSession(updatedSession);
-    setSessions(updatedSessions);
-
+    if (!selectedSession) return;
     try {
-      await storageService.updateSession(updatedSession);
-
-      if (!isAttending) {
-        const student = students.find(s => s.id === studentId);
-        // Optional: Notify student (if we had specific user notifications)
+      const updated = { ...selectedSession };
+      if (updated.attendeeIds.includes(studentId)) {
+        updated.attendeeIds = updated.attendeeIds.filter(id => id !== studentId);
+      } else {
+        updated.attendeeIds = [...updated.attendeeIds, studentId];
       }
-    } catch (error) {
-      console.error("Failed to update attendance", error);
+      await storageService.updateSession(updated);
+      setSelectedSession(updated);
+      setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
+    } catch (err) { console.error(err); alert('Failed to update attendance'); }
+  };
+
+  const filtered = sessions.filter(s => {
+    if (filter !== 'all' && s.status !== filter) return false;
+    if (search && !s.title.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case 'Upcoming': return 'badge-blue';
+      case 'Ongoing': return 'badge-green';
+      case 'Completed': return 'badge-gray';
+      default: return 'badge-gray';
     }
   };
 
+  if (loading) {
+    return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-3 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>;
+  }
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Left side: Sessions List */}
-      <div className="lg:col-span-1 space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-bold text-slate-900 font-serif">Academy Sessions</h3>
-          {isAdmin && (
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="p-2 btn-divine rounded-lg transition-transform hover:scale-105"
-            >
-              <Plus size={20} />
-            </button>
-          )}
+    <div className="space-y-6 animate-in">
+      <div className="page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1>{mode === 'admin' ? 'Session Management' : 'Sessions'}</h1>
+          <p>{mode === 'admin' ? 'Create and manage sessions' : 'View your session schedule'}</p>
         </div>
-
-        {showCreateForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCreateForm(false)}>
-            <div
-              className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 relative"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h4 className="font-bold text-xl text-[#0F766E] font-serif">Schedule Session</h4>
-                <button onClick={() => setShowCreateForm(false)} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 p-1 rounded-full"><X size={18} /></button>
-              </div>
-              <form onSubmit={handleCreateSession} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Title</label>
-                  <input
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition-all"
-                    placeholder="e.g. Bhagavad Gita Ch. 2"
-                    value={newSession.title}
-                    onChange={e => setNewSession({ ...newSession, title: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Type</label>
-                    <select
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none bg-white font-medium text-slate-700"
-                      value={newSession.type}
-                      onChange={e => setNewSession({ ...newSession, type: e.target.value as any })}
-                    >
-                      <option value="Regular">Regular</option>
-                      <option value="Camp">Camp</option>
-                      <option value="Event">Event</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Status</label>
-                    <select
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none bg-white font-medium text-slate-700"
-                      value={newSession.status}
-                      onChange={e => setNewSession({ ...newSession, status: e.target.value as any })}
-                    >
-                      <option value="Upcoming">Upcoming</option>
-                      <option value="Ongoing">Ongoing</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Date</label>
-                  <input
-                    required
-                    type="date"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none"
-                    value={newSession.date}
-                    onChange={e => setNewSession({ ...newSession, date: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facilitator</label>
-                  <input
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none"
-                    placeholder="e.g. HG Prabhu Jee"
-                    value={newSession.facilitator}
-                    onChange={e => setNewSession({ ...newSession, facilitator: e.target.value })}
-                  />
-                </div>
-                <div className="pt-2">
-                  <button type="submit" className="w-full py-3.5 btn-divine font-bold rounded-xl shadow-lg shadow-teal-200 transition-all hover:scale-[1.02] active:scale-95">
-                    Schedule Session
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+        {mode === 'admin' && (
+          <button onClick={() => setShowForm(true)} className="btn-divine">
+            <Plus size={18} /> New Session
+          </button>
         )}
+      </div>
 
-        <div className="space-y-4">
-          {sessions.map(session => (
-            <div
-              key={session.id}
-              onClick={() => setActiveSession(session)}
-              className={`
-                p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden
-                ${activeSession?.id === session.id
-                  ? 'glass-card border-[#0F766E] shadow-md ring-1 ring-teal-200'
-                  : 'bg-white/50 border-slate-100 hover:border-teal-200'}
-              `}
-            >
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${session.status === 'Ongoing' ? 'bg-green-100 text-green-700 animate-pulse' :
-                      session.status === 'Completed' ? 'bg-slate-100 text-slate-500' : 'bg-blue-100 text-blue-700'
-                      }`}>
-                      {session.status}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium px-2 py-0.5 bg-slate-50 rounded-full">{session.type}</span>
-                  </div>
-                  <h4 className="font-bold text-slate-900 group-hover:text-[#0F766E] transition-colors">{session.title}</h4>
-                  <div className="flex items-center gap-4 text-xs text-slate-500">
-                    <span className="flex items-center gap-1"><Clock size={12} /> {new Date(session.date).toLocaleDateString()}</span>
-                    <span className="flex items-center gap-1"><Users size={12} /> {session.attendeeIds.length}</span>
-                  </div>
-                </div>
-                <ChevronRight className={`transition-transform ${activeSession?.id === session.id ? 'text-[#0F766E] translate-x-1' : 'text-slate-300'}`} size={20} />
-              </div>
-            </div>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input className="search-input" placeholder="Search sessions..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="tab-nav">
+          {['all', 'Upcoming', 'Ongoing', 'Completed'].map(f => (
+            <button key={f} className={`tab-item ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
+              {f === 'all' ? 'All' : f}
+            </button>
           ))}
-          {sessions.length === 0 && (
-            <div className="text-center py-12 px-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              <Calendar className="mx-auto text-slate-300 mb-3" size={32} />
-              <p className="text-slate-400 text-sm italic">No spiritual sessions active.</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Right side: Attendance/Details */}
-      <div className="lg:col-span-2">
-        {activeSession ? (
-          <div className="glass-card rounded-2xl border border-white/50 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
-            <div className="p-6 border-b border-white/20 bg-teal-50/30">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-teal-100 text-[#0F766E] rounded-xl">
-                    <UserCheck size={24} />
+      {/* Sessions List */}
+      {filtered.length === 0 ? (
+        <div className="empty-state"><Calendar size={48} /><p>No sessions found</p></div>
+      ) : (
+        <div className="grid gap-4">
+          {filtered.map(session => (
+            <div key={session.id} className="glass-card-static p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
+                    <h3 className="text-base font-bold text-slate-900">{session.title}</h3>
+                    <span className={`badge ${statusColor(session.status)}`}>{session.status}</span>
+                    <span className="badge badge-purple">{session.type}</span>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900 font-serif">{activeSession.title}</h3>
-                    <p className="text-sm text-slate-500 flex items-center gap-2">
-                      <MapPin size={14} /> {activeSession.location} • <Calendar size={14} /> {new Date(activeSession.date).toDateString()}
-                    </p>
+                  {session.description && (
+                    <p className="text-sm text-slate-500 mb-3 line-clamp-2">{session.description}</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                    <span className="flex items-center gap-1.5"><Clock size={14} /> {new Date(session.date).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    {session.location && <span className="flex items-center gap-1.5"><MapPin size={14} /> {session.location}</span>}
+                    <span className="flex items-center gap-1.5"><Users size={14} /> {session.attendeeIds.length} attendees</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-black text-[#0F766E]">{activeSession.attendeeIds.length}</div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Students</div>
-                </div>
+                {mode === 'admin' && (
+                  <button
+                    onClick={() => setSelectedSession(selectedSession?.id === session.id ? null : session)}
+                    className="btn-outline text-xs py-2 px-3 flex-shrink-0"
+                  >
+                    <UserCheck size={14} /> Attendance
+                  </button>
+                )}
               </div>
-            </div>
 
-            <div className="flex-1 p-6 overflow-y-auto">
-              {!isAdmin && (
-                <div className="mb-6 p-4 bg-teal-50 rounded-xl text-center text-teal-800 text-sm">
-                  Your attendance status for this session:
-                  {activeSession.attendeeIds.includes('current-user-id') ?
-                    <span className="font-bold ml-1 text-emerald-600">Present</span> :
-                    <span className="font-bold ml-1 text-slate-500">Not Marked</span>
-                  }
-                </div>
-              )}
-
-              {isAdmin ? (
-                // ADMIN VIEW: Attendee List with Toggle
-                students.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {students.map(student => {
-                      const isPresent = activeSession.attendeeIds.includes(student.id);
+              {/* Attendance Panel */}
+              {mode === 'admin' && selectedSession?.id === session.id && (
+                <div className="mt-4 pt-4 border-t border-slate-100 animate-in">
+                  <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    <UserCheck size={16} className="text-divine-600" /> Mark Attendance ({session.attendeeIds.length}/{profiles.length})
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 max-h-60 overflow-y-auto">
+                    {profiles.map(p => {
+                      const present = session.attendeeIds.includes(p.id);
                       return (
-                        <div
-                          key={student.id}
-                          onClick={() => toggleAttendance(student.id)}
-                          className={`
-                            flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer select-none
-                            ${isPresent
-                              ? 'bg-emerald-50/80 border-emerald-100 shadow-sm'
-                              : 'bg-white/60 border-slate-100 hover:bg-white hover:border-teal-100'}
-                          `}
+                        <button
+                          key={p.id}
+                          onClick={() => toggleAttendance(p.id)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${present
+                              ? 'bg-green-50 border-green-200 text-green-700'
+                              : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                            }`}
                         >
-                          <div className="relative">
-                            <div className="w-12 h-12 rounded-full bg-slate-100 overflow-hidden ring-2 ring-white shadow-sm">
-                              {student.photoUrl ? (
-                                <img src={student.photoUrl} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                  <Users size={20} />
-                                </div>
-                              )}
-                            </div>
-                            {isPresent && (
-                              <div className="absolute -top-1 -right-1 bg-white rounded-full">
-                                <CheckCircle2 size={16} className="text-emerald-500 fill-white" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`font-bold text-sm truncate ${isPresent ? 'text-emerald-700' : 'text-slate-900'}`}>
-                              {student.spiritualName || student.name}
-                            </p>
-                            <p className="text-xs text-slate-500 truncate">{student.branch} • {student.yearOfStudy}</p>
-                          </div>
-                        </div>
+                          <CheckCircle2 size={14} className={present ? 'text-green-500' : 'text-slate-300'} />
+                          <span className="truncate">{p.name}</span>
+                        </button>
                       );
                     })}
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                    <Sparkles size={48} className="mb-4 text-teal-100" />
-                    <p>No students registered yet.</p>
-                  </div>
-                )
-              ) : (
-                // STUDENT VIEW: Simple Description
-                <div className="text-slate-600 leading-relaxed">
-                  <h4 className="font-bold mb-2">Description</h4>
-                  <p>{activeSession.description || "No specific details provided for this session."}</p>
-
-                  <h4 className="font-bold mt-6 mb-2">Facilitator</h4>
-                  <p>{activeSession.facilitator}</p>
                 </div>
               )}
             </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create Session Modal */}
+      {showForm && (
+        <div className="modal-overlay" onClick={() => setShowForm(false)}>
+          <div className="modal-content p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-slate-900">Create New Session</h2>
+              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleCreateSession} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Title *</label>
+                <input className="input-divine" placeholder="Session title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
+                <textarea className="textarea-divine" placeholder="Session description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Date *</label>
+                  <input type="datetime-local" className="input-divine" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Location</label>
+                  <input className="input-divine" placeholder="e.g. Temple Hall" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Facilitator</label>
+                  <input className="input-divine" placeholder="Speaker name" value={form.facilitator} onChange={e => setForm({ ...form, facilitator: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Type</label>
+                  <select className="select-divine" value={form.type} onChange={e => setForm({ ...form, type: e.target.value as any })}>
+                    <option>Regular</option><option>Camp</option><option>Event</option><option>Special</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowForm(false)} className="btn-ghost flex-1">Cancel</button>
+                <button type="submit" className="btn-divine flex-1">Create Session</button>
+              </div>
+            </form>
           </div>
-        ) : (
-          <div className="bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 h-full flex flex-col items-center justify-center p-8 text-center text-slate-400">
-            <Calendar size={64} className="mb-6 opacity-20" />
-            <h3 className="text-lg font-bold text-slate-600">Select a Session</h3>
-            <p className="max-w-xs mt-2 text-sm">Pick a session from the list on the left to view details{isAdmin && " or mark attendance"}.</p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

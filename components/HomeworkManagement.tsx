@@ -1,268 +1,211 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Plus, Clock, FileText, Upload } from 'lucide-react';
+import { FileText, Plus, X, Calendar, Clock, Upload, CheckCircle, Send, ChevronDown } from 'lucide-react';
 import { storageService } from '../services/storageService';
-import { Session, Homework } from '../types';
+import { Session } from '../types';
+import { supabase } from '../lib/supabaseClient';
 
-interface Props {
-    mode: 'admin' | 'student';
-}
+interface Props { mode: 'admin' | 'student'; }
 
 const HomeworkManagement: React.FC<Props> = ({ mode }) => {
     const [sessions, setSessions] = useState<Session[]>([]);
-    const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-    const [homeworkList, setHomeworkList] = useState<Homework[]>([]);
-    const [showCreateForm, setShowCreateForm] = useState(false);
-    const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
-    const isAdmin = mode === 'admin';
-
-    // Form State
-    const [newItem, setNewItem] = useState({
-        title: '',
-        description: '',
-        dueDate: new Date().toISOString().split('T')[0],
-        fileUrl: ''
-    });
-
-    const [submissionLink, setSubmissionLink] = useState('');
+    const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+    const [homework, setHomework] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showForm, setShowForm] = useState(false);
+    const [form, setForm] = useState({ title: '', description: '', dueDate: '', fileUrl: '' });
+    const [userProfileId, setUserProfileId] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [submitUrl, setSubmitUrl] = useState('');
 
     useEffect(() => {
         loadSessions();
     }, []);
 
-    useEffect(() => {
-        if (activeSessionId) {
-            loadHomework(activeSessionId);
-        }
-    }, [activeSessionId]);
-
     const loadSessions = async () => {
-        const data = await storageService.getSessions();
-        setSessions(data);
-        if (data.length > 0 && !activeSessionId) {
-            setActiveSessionId(data[0].id);
-        }
+        try {
+            const s = await storageService.getSessions();
+            setSessions(s);
+            if (s.length > 0) {
+                setSelectedSessionId(s[0].id);
+                loadHomework(s[0].id);
+            }
+
+            if (mode === 'student') {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user?.email) {
+                    const profile = await storageService.getProfileByEmail(session.user.email);
+                    if (profile) setUserProfileId(profile.id);
+                }
+            }
+        } catch (err) { console.error(err); }
+        finally { setLoading(false); }
     };
 
     const loadHomework = async (sessionId: string) => {
-        const data = await storageService.getHomeworkBySession(sessionId);
-        setHomeworkList(data);
+        try {
+            const hw = await storageService.getHomeworkBySession(sessionId);
+            setHomework(hw);
+        } catch (err) { console.error(err); }
+    };
+
+    const handleSessionChange = (sessionId: string) => {
+        setSelectedSessionId(sessionId);
+        loadHomework(sessionId);
     };
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!activeSessionId) return;
-
         try {
             await storageService.createHomework({
-                ...newItem,
-                sessionId: activeSessionId
+                sessionId: selectedSessionId,
+                title: form.title,
+                description: form.description,
+                dueDate: form.dueDate,
+                fileUrl: form.fileUrl
             });
-            setShowCreateForm(false);
-            setNewItem({ title: '', description: '', dueDate: '', fileUrl: '' });
-            loadHomework(activeSessionId);
-            alert("Assignment created!");
-        } catch (error: any) {
-            console.error("Failed to create assignment", error);
-            alert(`Failed to create assignment: ${error.message || error.error_description || "Unknown error"}`);
-        }
+            setShowForm(false);
+            setForm({ title: '', description: '', dueDate: '', fileUrl: '' });
+            loadHomework(selectedSessionId);
+        } catch (err) { console.error(err); alert('Failed to create homework'); }
     };
 
-    const handleSubmitWork = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedHomework) return;
-
-        // In a real app, this would save to the Submissions table
-        alert("Work submitted for " + selectedHomework.title + "! Link: " + submissionLink);
-        setSelectedHomework(null);
-        setSubmissionLink('');
+    const handleSubmit = async (homeworkId: string) => {
+        if (!submitUrl.trim()) return;
+        setSubmitting(true);
+        try {
+            await storageService.submitHomework({
+                homeworkId,
+                studentId: userProfileId,
+                fileUrl: submitUrl
+            });
+            alert('Submitted successfully!');
+            setSubmitUrl('');
+        } catch (err) { console.error(err); alert('Failed to submit'); }
+        finally { setSubmitting(false); }
     };
+
+    if (loading) {
+        return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-3 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>;
+    }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-100px)]">
-            {/* Sidebar: Sessions List */}
-            <div className="lg:col-span-1 glass-card p-4 rounded-2xl overflow-y-auto space-y-3">
-                <h3 className="font-bold text-[#0F766E] mb-4 flex items-center gap-2">
-                    <BookOpen size={20} /> Select Session
-                </h3>
-                {sessions.map(session => (
-                    <div
-                        key={session.id}
-                        onClick={() => setActiveSessionId(session.id)}
-                        className={`p-3 rounded-xl cursor-pointer transition-all border ${activeSessionId === session.id
-                            ? 'bg-teal-50 border-teal-200 shadow-sm'
-                            : 'bg-white/50 border-transparent hover:bg-white'
-                            }`}
-                    >
-                        <p className={`font-bold text-sm ${activeSessionId === session.id ? 'text-[#0F766E]' : 'text-slate-700'}`}>
-                            {session.title}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">{new Date(session.date).toLocaleDateString()}</p>
-                    </div>
-                ))}
+        <div className="space-y-6 animate-in">
+            <div className="page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1>{mode === 'admin' ? 'Homework Management' : 'My Assignments'}</h1>
+                    <p>{mode === 'admin' ? 'Create and assign homework' : 'View and submit your assignments'}</p>
+                </div>
+                {mode === 'admin' && selectedSessionId && (
+                    <button onClick={() => setShowForm(true)} className="btn-divine">
+                        <Plus size={18} /> Assign Homework
+                    </button>
+                )}
             </div>
 
-            {/* Main Content: Homework List */}
-            <div className="lg:col-span-3 space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-900 font-serif">Assignments</h2>
-                        <p className="text-slate-500 text-sm">Manage homework and study materials</p>
-                    </div>
-                    {isAdmin && (
-                        <button
-                            onClick={() => setShowCreateForm(true)}
-                            className="btn-divine px-4 py-2 rounded-xl flex items-center gap-2 font-medium"
-                        >
-                            <Plus size={18} /> New Assignment
-                        </button>
-                    )}
+            {/* Session Selector */}
+            <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Select Session</label>
+                <select
+                    className="select-divine max-w-md"
+                    value={selectedSessionId}
+                    onChange={e => handleSessionChange(e.target.value)}
+                >
+                    {sessions.map(s => (
+                        <option key={s.id} value={s.id}>{s.title} — {new Date(s.date).toLocaleDateString()}</option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Homework List */}
+            {homework.length === 0 ? (
+                <div className="empty-state">
+                    <FileText size={48} />
+                    <p>No homework assigned for this session</p>
                 </div>
-
-                {/* Create Form */}
-                {
-                    showCreateForm && (
-                        <div className="glass-card p-6 rounded-2xl animate-in slide-in-from-top-4 border-l-4 border-[#0F766E]">
-                            <div className="flex justify-between items-start mb-4">
-                                <h4 className="font-bold text-[#0F766E]">Create New Assignment</h4>
-                                <button onClick={() => setShowCreateForm(false)} className="text-slate-400">✕</button>
-                            </div>
-                            <form onSubmit={handleCreate} className="space-y-4">
-                                <input
-                                    required
-                                    placeholder="Assignment Title"
-                                    className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E]"
-                                    value={newItem.title}
-                                    onChange={e => setNewItem({ ...newItem, title: e.target.value })}
-                                />
-                                <textarea
-                                    required
-                                    placeholder="Description / Instructions"
-                                    className="w-full px-4 py-2 rounded-xl border-slate-200 focus:ring-[#0F766E] min-h-[100px]"
-                                    value={newItem.description}
-                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input
-                                        type="date"
-                                        required
-                                        className="w-full px-4 py-2 rounded-xl border-slate-200"
-                                        value={newItem.dueDate}
-                                        onChange={e => setNewItem({ ...newItem, dueDate: e.target.value })}
-                                    />
-                                    <input
-                                        placeholder="File URL (Optional PDF/Doc)"
-                                        className="w-full px-4 py-2 rounded-xl border-slate-200"
-                                        value={newItem.fileUrl}
-                                        onChange={e => setNewItem({ ...newItem, fileUrl: e.target.value })}
-                                    />
-                                </div>
-                                <div className="flex justify-end gap-3 pt-2">
-                                    <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
-                                    <button type="submit" className="btn-divine px-6 py-2 rounded-lg font-medium">Create Assignment</button>
-                                </div>
-                            </form>
-                        </div>
-                    )
-                }
-
-                {/* Submit Modal */}
-                {
-                    selectedHomework && (
-                        <div
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
-                            onClick={() => setSelectedHomework(null)}
-                        >
-                            <div
-                                className="bg-white rounded-2xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200 shadow-2xl relative"
-                                onClick={e => e.stopPropagation()}
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="font-bold text-xl text-slate-800">Submit Work</h3>
-                                        <p className="text-sm text-slate-500">{selectedHomework.title}</p>
-                                    </div>
-                                    <button onClick={() => setSelectedHomework(null)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">✕</button>
-                                </div>
-                                <p className="text-sm text-slate-600 mb-6 bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200">
-                                    Please paste a link to your completed work (Google Doc, Drive, etc.).
-                                </p>
-                                <form onSubmit={handleSubmitWork} className="space-y-4">
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Submission URL</label>
-                                        <input
-                                            required
-                                            placeholder="https://..."
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none transition-all"
-                                            value={submissionLink}
-                                            onChange={e => setSubmissionLink(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="flex justify-end gap-3 pt-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedHomework(null)}
-                                            className="px-5 py-2.5 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="btn-divine px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-teal-100 transition-all hover:scale-105 active:scale-95"
-                                        >
-                                            Submit Work
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    )
-                }
-
-                {/* List */}
-                <div className="grid gap-4">
-                    {homeworkList.length > 0 ? (
-                        homeworkList.map(hw => (
-                            <div key={hw.id} className="glass-card p-5 rounded-2xl hover:shadow-md transition-all group">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-2 flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="bg-teal-50 text-[#0F766E] p-1.5 rounded-lg"><FileText size={16} /></span>
-                                            <h4 className="font-bold text-slate-800">{hw.title}</h4>
-                                        </div>
-                                        <p className="text-slate-600 text-sm pl-9">{hw.description}</p>
-                                        <div className="flex items-center gap-4 pl-9 text-xs text-slate-400 mt-2">
-                                            <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-md">
-                                                <Clock size={12} /> Due: {new Date(hw.dueDate).toLocaleDateString()}
+            ) : (
+                <div className="space-y-4">
+                    {homework.map(hw => (
+                        <div key={hw.id} className="glass-card-static p-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                                        <h3 className="text-base font-bold text-slate-900">{hw.title}</h3>
+                                        {hw.dueDate && (
+                                            <span className="badge badge-red text-[10px] flex items-center gap-1">
+                                                <Clock size={10} /> Due: {new Date(hw.dueDate).toLocaleDateString()}
                                             </span>
-                                            {hw.fileUrl && (
-                                                <a href={hw.fileUrl} target="_blank" className="text-blue-500 hover:underline flex items-center gap-1">
-                                                    <Upload size={12} /> View Attachment
-                                                </a>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
-                                    {!isAdmin && (
-                                        <div className="flex flex-col items-end gap-2">
-                                            <button
-                                                onClick={() => setSelectedHomework(hw)}
-                                                className="text-xs font-bold bg-[#0F766E] text-white px-3 py-1.5 rounded-lg hover:bg-teal-800 transition-colors shadow-sm"
-                                            >
-                                                Submit
-                                            </button>
-                                        </div>
+                                    <p className="text-sm text-slate-600 mb-3">{hw.description}</p>
+                                    {hw.fileUrl && (
+                                        <a href={hw.fileUrl} target="_blank" rel="noopener noreferrer" className="text-divine-700 text-sm font-medium hover:underline flex items-center gap-1">
+                                            <FileText size={14} /> View Attachment
+                                        </a>
                                     )}
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-12 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
-                            <FileText size={40} className="mx-auto text-slate-300 mb-2" />
-                            <p className="text-slate-400">No assignments for this session yet.</p>
+
+                            {/* Student Submit */}
+                            {mode === 'student' && (
+                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                    <div className="flex gap-2">
+                                        <input
+                                            className="input-divine text-sm flex-1"
+                                            placeholder="Paste your submission URL (Google Doc, Drive link, etc.)"
+                                            value={submitUrl}
+                                            onChange={e => setSubmitUrl(e.target.value)}
+                                        />
+                                        <button
+                                            onClick={() => handleSubmit(hw.id)}
+                                            disabled={submitting || !submitUrl.trim()}
+                                            className="btn-divine py-2 px-4 text-sm disabled:opacity-40"
+                                        >
+                                            {submitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Send size={14} /> Submit</>}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    ))}
                 </div>
-            </div >
-        </div >
+            )}
+
+            {/* Create Homework Modal */}
+            {showForm && (
+                <div className="modal-overlay" onClick={() => setShowForm(false)}>
+                    <div className="modal-content p-6" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-lg font-bold text-slate-900">Assign Homework</h2>
+                            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handleCreate} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Title *</label>
+                                <input className="input-divine" placeholder="Assignment title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Description *</label>
+                                <textarea className="textarea-divine" placeholder="Describe the assignment..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Due Date</label>
+                                    <input type="datetime-local" className="input-divine" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Attachment URL</label>
+                                    <input className="input-divine" placeholder="Doc/PDF link" value={form.fileUrl} onChange={e => setForm({ ...form, fileUrl: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={() => setShowForm(false)} className="btn-ghost flex-1">Cancel</button>
+                                <button type="submit" className="btn-divine flex-1">Assign</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 
