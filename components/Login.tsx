@@ -2,8 +2,14 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User as UserIcon, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
 import SuccessModal from './common/SuccessModal';
+
+// Safe Capacitor check — avoids import crash in web
+const isNativePlatform = () => {
+    try {
+        return !!(window as any).Capacitor?.isNativePlatform?.();
+    } catch { return false; }
+};
 
 const Login: React.FC = () => {
     const [isSignUp, setIsSignUp] = useState(false);
@@ -25,7 +31,7 @@ const Login: React.FC = () => {
         setError('');
         setLoading(true);
         try {
-            const redirectTo = Capacitor.isNativePlatform()
+            const redirectTo = isNativePlatform()
                 ? 'com.gitalife.app://login-callback'
                 : window.location.origin;
 
