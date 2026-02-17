@@ -2,6 +2,7 @@ export type UserRole = 'student' | 'admin' | 'mentor';
 export type StudentCategory = 'Favourite' | 'Regular' | 'Sankalpa' | 'Guest' | 'Volunteer' | 'Advanced seeker';
 export type SessionStatus = 'Upcoming' | 'Ongoing' | 'Completed';
 export type ResourceType = 'book' | 'photo' | 'video' | 'lecture';
+export type MentorshipStatus = 'Pending' | 'Accepted' | 'Rejected';
 
 export enum InitiationStatus {
   UNINITIATED = 'Uninitiated',
@@ -18,18 +19,12 @@ export interface UserProfile {
   email: string;
   phone: string;
   photoUrl?: string;
-
-  // Status
   status?: InitiationStatus | string;
-
-  // Personal
   dob?: string;
   nativePlace?: string;
   currentAddress?: string;
   branch?: string;
   yearOfStudy?: string;
-
-  // Spiritual / System
   role: UserRole;
   category: StudentCategory;
   hobbies?: string[];
@@ -38,8 +33,7 @@ export interface UserProfile {
   mentorId?: string;
   goals?: string;
   interests?: string[];
-  dailyMalas?: number; // Added for compatibility
-
+  dailyMalas?: number;
   createdAt: string;
 }
 
@@ -105,7 +99,7 @@ export interface QuizQuestion {
   id: string;
   question: string;
   options: string[];
-  correctAnswer: number; // Index 0-3
+  correctAnswer: number;
   explanation?: string;
 }
 
@@ -132,4 +126,13 @@ export interface ChantingLog {
   userEmail: string;
   date: string;
   rounds: number;
+}
+
+export interface MentorshipRequest {
+  id: string;
+  studentId: string;
+  mentorId: string;
+  status: MentorshipStatus;
+  message: string;
+  createdAt: string;
 }

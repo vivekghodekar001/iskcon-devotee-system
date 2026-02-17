@@ -14,86 +14,118 @@ const AdminLayout: React.FC = () => {
         await supabase.auth.signOut();
     };
 
+    const navItems = [
+        {
+            section: null, items: [
+                { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+            ]
+        },
+        {
+            section: 'Management', items: [
+                { to: '/admin/sessions', icon: Calendar, label: 'Sessions' },
+                { to: '/admin/devotees', icon: UserPlus, label: 'Devotees' },
+                { to: '/admin/quizzes', icon: BrainCircuit, label: 'Quiz Manager' },
+                { to: '/admin/homework', icon: FileText, label: 'Homework' },
+            ]
+        },
+        {
+            section: 'Resources', items: [
+                { to: '/admin/resources', icon: Library, label: 'Library' },
+                { to: '/admin/mentorship', icon: Users2, label: 'Mentors' },
+            ]
+        },
+    ];
+
     return (
         <div className="min-h-screen flex bg-slate-50 font-sans text-slate-900">
-            {/* Mobile Sidebar Overlay */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
+            {/* Mobile Overlay */}
+            <div
+                className={`fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                onClick={() => setSidebarOpen(false)}
+            />
 
-            {/* Admin Sidebar */}
+            {/* Sidebar */}
             <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl bg-slate-900 bg-gradient-to-b from-slate-900 to-slate-800
+        fixed inset-y-0 left-0 z-50 w-64 text-white transform transition-transform duration-300 ease-out lg:relative lg:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 flex flex-col
       `} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-                <div className="flex flex-col h-full">
-                    <div className="p-6 flex items-center justify-between bg-white/5">
-                        <div className="flex items-center gap-3">
-                            <img src="/logo-new.png" alt="Gita Life" className="w-12 h-12 rounded-full shadow-lg border border-white/20 object-contain bg-white/10" />
-                            <div>
-                                <h1 className="text-lg font-bold tracking-tight font-serif leading-tight">Gita Life</h1>
-                                <p className="text-[10px] opacity-70 font-medium">Admin Portal</p>
-                            </div>
+                {/* Logo */}
+                <div className="p-5 flex items-center justify-between border-b border-white/5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                            <ShieldCheck size={20} className="text-white" />
                         </div>
-                        <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/80 hover:text-white">
-                            <X size={24} />
-                        </button>
+                        <div>
+                            <h1 className="text-base font-bold tracking-tight font-serif">Gita Life</h1>
+                            <p className="text-[10px] text-slate-400 font-medium">Admin Portal</p>
+                        </div>
                     </div>
+                    <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/60 hover:text-white p-1">
+                        <X size={20} />
+                    </button>
+                </div>
 
-                    <nav className="flex-1 px-4 space-y-1 mt-6">
-                        <SidebarLink to="/admin" icon={<LayoutDashboard size={20} />} label="Dashboard" active={location.pathname === '/admin'} />
+                {/* Nav */}
+                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                    {navItems.map((group, gi) => (
+                        <div key={gi}>
+                            {group.section && (
+                                <div className="pt-5 pb-2 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">{group.section}</div>
+                            )}
+                            {group.items.map(item => {
+                                const active = item.exact
+                                    ? location.pathname === item.to
+                                    : location.pathname.startsWith(item.to);
+                                return (
+                                    <Link
+                                        key={item.to}
+                                        to={item.to}
+                                        onClick={() => setSidebarOpen(false)}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${active
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                            }`}
+                                    >
+                                        <item.icon size={18} className={`transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
+                                        {item.label}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ))}
+                </nav>
 
-                        <div className="pt-4 pb-2 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Management</div>
-                        <SidebarLink to="/admin/sessions" icon={<Calendar size={20} />} label="Sessions" active={location.pathname.includes('/sessions')} />
-                        <SidebarLink to="/admin/devotees" icon={<UserPlus size={20} />} label="Devotees" active={location.pathname.includes('/devotees')} />
-                        <SidebarLink to="/admin/quizzes" icon={<BrainCircuit size={20} />} label="Quiz Manager" active={location.pathname.includes('/quizzes')} />
-                        <SidebarLink to="/admin/homework" icon={<FileText size={20} />} label="Homework" active={location.pathname.includes('/homework')} />
-
-                        <div className="pt-4 pb-2 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Resources</div>
-                        <SidebarLink to="/admin/resources" icon={<Library size={20} />} label="Library" active={location.pathname.includes('/resources')} />
-                        <SidebarLink to="/admin/mentorship" icon={<Users2 size={20} />} label="Mentors" active={location.pathname.includes('/mentorship')} />
-                    </nav>
-
-                    <div className="p-4 border-t border-white/10 bg-black/10">
-                        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 w-full text-left text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                            <LogOut size={20} />
-                            <span className="text-sm font-medium">Logout Admin</span>
-                        </button>
-                    </div>
+                {/* Logout */}
+                <div className="p-3 border-t border-white/5">
+                    <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 w-full text-left text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-all text-sm font-medium">
+                        <LogOut size={18} />
+                        Logout
+                    </button>
                 </div>
             </aside>
 
-            {/* Main Content */}
+            {/* Main */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30"
-                    style={{ paddingTop: 'env(safe-area-inset-top)', height: 'calc(4rem + env(safe-area-inset-top))' }}>
-                    <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-                        <Menu size={24} />
+                <header className="h-14 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30"
+                    style={{ paddingTop: 'env(safe-area-inset-top)', height: 'calc(3.5rem + env(safe-area-inset-top))' }}>
+                    <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+                        <Menu size={22} />
                     </button>
-                    <div className="ml-auto flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
-                        <ShieldCheck size={14} /> Administrator Mode
+                    <div className="ml-auto">
+                        <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold">
+                            <ShieldCheck size={14} /> Admin
+                        </div>
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto p-6 lg:p-10">
+                <div className="flex-1 overflow-y-auto p-5 lg:p-8">
                     <Outlet />
                 </div>
             </main>
         </div>
     );
 };
-
-const SidebarLink: React.FC<{ to: string; icon: React.ReactNode; label: string; active: boolean }> = ({ to, icon, label, active }) => (
-    <Link
-        to={to}
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all group ${active ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
-    >
-        <div className={`transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>{icon}</div>
-        <span>{label}</span>
-    </Link>
-);
 
 export default AdminLayout;

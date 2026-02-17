@@ -2,31 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { storageService } from '../services/storageService';
 import {
-    Users,
-    Calendar,
-    BookOpen,
-    TrendingUp,
-    Activity,
-    AlertCircle
+    Users, Calendar, BookOpen, TrendingUp, Activity,
+    FileText, BrainCircuit, Library, ArrowRight
 } from 'lucide-react';
 import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
 const AdminDashboard: React.FC = () => {
-    const [stats, setStats] = useState({
-        totalStudents: 0,
-        activeSessions: 0,
-        totalResources: 0,
-        pendingMentorships: 0
-    });
-    const [recentActivity, setRecentActivity] = useState<any[]>([]);
+    const [stats, setStats] = useState({ devotees: 0, sessions: 0, quizzes: 0, resources: 0 });
+    const [chartData, setChartData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadStats();
@@ -34,124 +20,132 @@ const AdminDashboard: React.FC = () => {
 
     const loadStats = async () => {
         try {
-            const students = await storageService.getProfiles();
-            const sessions = await storageService.getSessions();
-            const resources = await storageService.getResources();
-            // Mentorships needed (using mentorship_requests if available, else 0)
-            // const requests = await storageService.getMentorshipRequests(); // If this existed
-
-            setStats({
-                totalStudents: students.length,
-                activeSessions: sessions.filter(s => s.status === 'Ongoing').length,
-                totalResources: resources.length,
-                pendingMentorships: 0 // Placeholder until mentorship requests API is exposed
-            });
-
-            // Mock recent activity for now, replacing with real logs later if needed
-            setRecentActivity([
-                { id: 1, text: `System Online: ${students.length} devotees registered`, time: "Just now" },
-                { id: 2, text: `${sessions.length} sessions scheduled`, time: "Today" },
-                { id: 3, text: "Database schema synchronized", time: "Recent" },
+            const [profiles, sessions, quizzes, resources] = await Promise.all([
+                storageService.getAllProfiles(),
+                storageService.getSessions(),
+                storageService.getQuizzes(),
+                storageService.getResources(),
             ]);
 
+            setStats({
+                devotees: profiles.length,
+                sessions: sessions.length,
+                quizzes: quizzes.length,
+                resources: resources.length,
+            });
+
+            // Build attendance chart data from last 6 sessions
+            const recentSessions = sessions.slice(0, 6).reverse();
+            setChartData(recentSessions.map(s => ({
+                name: s.title?.substring(0, 15) || 'Session',
+                attendees: s.attendeeIds?.length || 0,
+            })));
         } catch (error) {
-            console.error("Failed to load admin stats", error);
+            console.error('Failed to load admin stats:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const data = [
-        { name: 'Mon', attendees: 40 },
-        { name: 'Tue', attendees: 30 },
-        { name: 'Wed', attendees: 55 },
-        { name: 'Thu', attendees: 45 },
-        { name: 'Fri', attendees: 70 },
-        { name: 'Sat', attendees: 120 },
-        { name: 'Sun', attendees: 90 },
+    const statCards = [
+        { icon: Users, label: 'Total Devotees', value: stats.devotees, color: 'text-blue-600', bg: 'bg-blue-50', link: '/admin/devotees' },
+        { icon: Calendar, label: 'Sessions', value: stats.sessions, color: 'text-teal-600', bg: 'bg-teal-50', link: '/admin/sessions' },
+        { icon: BrainCircuit, label: 'Quizzes', value: stats.quizzes, color: 'text-purple-600', bg: 'bg-purple-50', link: '/admin/quizzes' },
+        { icon: Library, label: 'Resources', value: stats.resources, color: 'text-amber-600', bg: 'bg-amber-50', link: '/admin/resources' },
     ];
 
-    return (
-        <div className="space-y-8 animate-in">
-            <header>
-                <h2 className="text-3xl font-bold font-serif text-slate-900">Administration Portal</h2>
-                <p className="text-slate-500">Overview of temple community growth and daily engagement.</p>
-            </header>
+    const quickActions = [
+        { icon: Calendar, label: 'Create Session', to: '/admin/sessions', color: 'text-teal-600' },
+        { icon: Users, label: 'Manage Devotees', to: '/admin/devotees', color: 'text-blue-600' },
+        { icon: BrainCircuit, label: 'Generate Quiz', to: '/admin/quizzes', color: 'text-purple-600' },
+        { icon: FileText, label: 'Assign Homework', to: '/admin/homework', color: 'text-amber-600' },
+    ];
 
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Link to="/admin/devotees">
-                    <StatCard
-                        icon={<Users className="text-blue-600" size={24} />}
-                        label="Total Devotees"
-                        value={stats.totalStudents}
-                        trend="View All Records"
-                        color="bg-blue-50"
-                    />
-                </Link>
-                <Link to="/admin/sessions">
-                    <StatCard
-                        icon={<Calendar className="text-purple-600" size={24} />}
-                        label="Active Sessions"
-                        value={stats.activeSessions}
-                        trend="Manage Sessions"
-                        color="bg-purple-50"
-                    />
-                </Link>
-                <Link to="/admin/resources">
-                    <StatCard
-                        icon={<BookOpen className="text-orange-600" size={24} />}
-                        label="Library Resources"
-                        value={stats.totalResources}
-                        trend="Manage Library"
-                        color="bg-orange-50"
-                    />
-                </Link>
-                <Link to="/admin/mentorship">
-                    <StatCard
-                        icon={<Activity className="text-teal-600" size={24} />}
-                        label="Pending Mentorships"
-                        value={stats.pendingMentorships}
-                        trend="View Requests"
-                        color="bg-teal-50"
-                    />
-                </Link>
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6 animate-in">
+            <div className="page-header">
+                <h1>Admin Dashboard</h1>
+                <p>Overview of your spiritual community</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Stat Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {statCards.map((card) => (
+                    <Link key={card.label} to={card.link} className="stat-card group">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center`}>
+                                <card.icon size={20} className={card.color} />
+                            </div>
+                            <ArrowRight size={16} className="text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                        <p className="text-2xl font-bold text-slate-900">{card.value}</p>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">{card.label}</p>
+                    </Link>
+                ))}
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6">
                 {/* Attendance Chart */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2">
-                        <TrendingUp size={20} className="text-[#0F766E]" /> Weekly Attendance
-                    </h3>
-                    <div className="h-64 cursor-default">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                                <YAxis axisLine={false} tickLine={false} />
+                <div className="lg:col-span-2 glass-card-static p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-900">Session Attendance</h2>
+                            <p className="text-sm text-slate-500">Recent sessions overview</p>
+                        </div>
+                        <div className="badge badge-teal">
+                            <TrendingUp size={12} /> Live
+                        </div>
+                    </div>
+                    {chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={240}>
+                            <BarChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
                                 <Tooltip
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                    cursor={{ fill: '#f0f9ff' }}
+                                    contentStyle={{
+                                        background: 'white',
+                                        border: 'none',
+                                        borderRadius: '0.75rem',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                        fontSize: '0.875rem'
+                                    }}
                                 />
-                                <Bar dataKey="attendees" fill="#0F766E" radius={[4, 4, 0, 0]} barSize={40} />
+                                <Bar dataKey="attendees" fill="#0F766E" radius={[6, 6, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
-                    </div>
+                    ) : (
+                        <div className="empty-state">
+                            <Activity size={40} />
+                            <p>No session data yet. Create your first session!</p>
+                        </div>
+                    )}
                 </div>
 
-                {/* Recent Activity */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 className="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
-                        <AlertCircle size={20} className="text-orange-500" /> Recent Updates
-                    </h3>
-                    <div className="space-y-4">
-                        {recentActivity.map((activity) => (
-                            <div key={activity.id} className="flex gap-3 items-start pb-3 border-b border-slate-50 last:border-0">
-                                <div className="w-2 h-2 rounded-full bg-orange-400 mt-2 shrink-0" />
-                                <div>
-                                    <p className="text-sm font-medium text-slate-700">{activity.text}</p>
-                                    <p className="text-xs text-slate-400">{activity.time}</p>
+                {/* Quick Actions */}
+                <div className="glass-card-static p-6">
+                    <h2 className="text-lg font-bold text-slate-900 mb-4">Quick Actions</h2>
+                    <div className="space-y-2">
+                        {quickActions.map(action => (
+                            <Link
+                                key={action.label}
+                                to={action.to}
+                                className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-all group"
+                            >
+                                <div className="w-9 h-9 rounded-lg bg-slate-50 group-hover:bg-white flex items-center justify-center transition-colors">
+                                    <action.icon size={18} className={action.color} />
                                 </div>
-                            </div>
+                                <span className="text-sm font-medium text-slate-700">{action.label}</span>
+                                <ArrowRight size={14} className="ml-auto text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
+                            </Link>
                         ))}
                     </div>
                 </div>
@@ -159,23 +153,5 @@ const AdminDashboard: React.FC = () => {
         </div>
     );
 };
-
-const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: number, trend: string, color: string }> = ({ icon, label, value, trend, color }) => (
-    <div className="glass-card bg-white/60 p-6 rounded-2xl hover:bg-white/80 transition-all cursor-pointer group h-full border border-transparent hover:border-slate-200 hover:shadow-md">
-        <div className="flex justify-between items-start mb-4">
-            <div className={`p-3 rounded-xl ${color} group-hover:scale-110 transition-transform`}>
-                {icon}
-            </div>
-            <span className="bg-slate-100 text-slate-600 group-hover:bg-slate-200 transition-colors text-xs px-2 py-1 rounded-full font-bold">
-                View
-            </span>
-        </div>
-        <h4 className="text-3xl font-bold text-slate-900 mb-1">{value}</h4>
-        <p className="text-sm font-medium text-slate-500 mb-2">{label}</p>
-        <p className="text-xs text-slate-400 flex items-center gap-1 group-hover:text-[#0F766E] transition-colors font-medium">
-            {trend} <TrendingUp size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-        </p>
-    </div>
-);
 
 export default AdminDashboard;
