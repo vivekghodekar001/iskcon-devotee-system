@@ -1,226 +1,180 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 import { supabase } from '../lib/supabaseClient';
-import { User, Sparkles, Phone, MapPin, Heart, Save, Camera } from 'lucide-react';
+import { User, Sparkles, Phone, MapPin, Heart, Save, Camera, Calendar, Mail, BookOpen } from 'lucide-react';
+import { StudentCategory, UserProfile } from '../types';
+
+const CATEGORIES: StudentCategory[] = ['Favourite', 'Regular', 'Sankalpa', 'Guest', 'Volunteer', 'Advanced seeker'];
 
 const MyProfile: React.FC = () => {
+    const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [formData, setFormData] = useState<any>({});
+    const [saved, setSaved] = useState(false);
+    const [form, setForm] = useState({
+        name: '', spiritualName: '', phone: '', dob: '',
+        branch: '', nativePlace: '', goals: '', category: 'Regular' as StudentCategory, photoUrl: ''
+    });
 
-    useEffect(() => {
-        loadProfile();
-    }, []);
+    useEffect(() => { loadProfile(); }, []);
 
     const loadProfile = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user?.email) {
-                const profile = await storageService.getProfileByEmail(user.email);
-                if (profile) {
-                    setFormData({
-                        ...profile,
-                        hobbies: profile.hobbies?.[0] || '' // Flatten array for input
-                    });
-                }
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user?.email) return;
+            const p = await storageService.getProfileByEmail(session.user.email);
+            if (p) {
+                setProfile(p);
+                setForm({
+                    name: p.name || '',
+                    spiritualName: p.spiritualName || '',
+                    phone: p.phone || '',
+                    dob: p.dob || '',
+                    branch: p.branch || '',
+                    nativePlace: p.nativePlace || '',
+                    goals: p.goals || '',
+                    category: p.category || 'Regular',
+                    photoUrl: p.photoUrl || ''
+                });
             }
-        } catch (error) {
-            console.error("Failed to load profile", error);
-        } finally {
-            setLoading(false);
-        }
+        } catch (err) { console.error(err); }
+        finally { setLoading(false); }
     };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!profile) return;
         setSaving(true);
         try {
-            await storageService.createProfile({
-                ...formData,
-                hobbies: [formData.hobbies] // Re-array
-            });
-            alert("Profile updated successfully!");
-        } catch (error) {
-            console.error("Failed to update profile", error);
-            alert("Failed to update profile");
+            await storageService.updateProfile(profile.id, form);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to save profile');
         } finally {
             setSaving(false);
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-500">Loading profile...</div>;
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setForm({ ...form, photoUrl: reader.result as string });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    if (loading) {
+        return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-3 border-divine-200 border-t-divine-600 rounded-full animate-spin" /></div>;
+    }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <header>
-                <h2 className="text-3xl font-bold font-serif text-slate-900">My Profile</h2>
-                <p className="text-slate-500">Update your personal information and spiritual progress.</p>
-            </header>
+        <div className="space-y-6 animate-in max-w-2xl mx-auto">
+            <div className="page-header">
+                <h1>My Profile</h1>
+                <p>Manage your devotee profile</p>
+            </div>
 
-            <form onSubmit={handleSave} className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-8 animate-in fade-in slide-in-from-bottom-4">
-                {/* Photo Section */}
-                {/* Photo Section */}
-                <div className="flex items-center gap-6 pb-6 border-b border-slate-50">
-                    <div
-                        onClick={() => document.getElementById('profile-upload')?.click()}
-                        className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden relative group cursor-pointer"
-                    >
-                        {formData.photoUrl ? (
-                            <img src={formData.photoUrl} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            <User size={40} className="text-slate-300" />
-                        )}
-                        <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center transition-all">
-                            <Camera size={20} className="text-white" />
+            {/* Avatar Card */}
+            <div className="glass-card-static overflow-hidden">
+                <div className="bg-gradient-to-br from-divine-700 to-divine-600 p-8 text-center relative">
+                    <div className="absolute inset-0 bg-black/5" />
+                    <div className="relative z-10">
+                        <div className="relative w-24 h-24 mx-auto mb-4">
+                            <div className="w-24 h-24 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white text-3xl font-bold border-2 border-white/20 shadow-xl overflow-hidden">
+                                {form.photoUrl ? (
+                                    <img src={form.photoUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    form.name?.[0]?.toUpperCase() || <User size={32} />
+                                )}
+                            </div>
+                            <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-lg shadow-lg flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
+                                <Camera size={14} className="text-slate-600" />
+                                <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                            </label>
                         </div>
-                        <input
-                            id="profile-upload"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    if (file.size > 500000) { // 500kb limit
-                                        alert("Image is too large. Please use an image under 500KB.");
-                                        return;
-                                    }
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                        setFormData({ ...formData, photoUrl: reader.result as string });
-                                    };
-                                    reader.readAsDataURL(file);
-                                }
-                            }}
-                        />
+                        <h2 className="text-xl font-bold text-white">{form.name || 'Devotee'}</h2>
+                        {form.spiritualName && <p className="text-sm text-white/70">{form.spiritualName}</p>}
+                        <p className="text-xs text-white/50 mt-1">{profile?.email}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Edit Form */}
+            <form onSubmit={handleSave} className="glass-card-static p-6 space-y-5">
+                <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                            <User size={14} className="inline mr-1" /> Full Name
+                        </label>
+                        <input className="input-divine" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-900 text-lg">{formData.name}</h3>
-                        <p className="text-slate-500 text-sm">{formData.role === 'admin' ? 'Administrator' : 'Devotee / Student'}</p>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                            <Sparkles size={14} className="inline mr-1" /> Spiritual Name
+                        </label>
+                        <input className="input-divine" placeholder="Initiated name" value={form.spiritualName} onChange={e => setForm({ ...form, spiritualName: e.target.value })} />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            <User size={14} /> Legal Name
+                <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                            <Phone size={14} className="inline mr-1" /> Phone
                         </label>
-                        <input
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
-                            value={formData.name || ''}
-                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                        />
+                        <input className="input-divine" placeholder="Phone number" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            <Sparkles size={14} /> Spiritual Name
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                            <Calendar size={14} className="inline mr-1" /> Date of Birth
                         </label>
-                        <input
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
-                            value={formData.spiritualName || ''}
-                            onChange={e => setFormData({ ...formData, spiritualName: e.target.value })}
-                        />
+                        <input type="date" className="input-divine" value={form.dob} onChange={e => setForm({ ...form, dob: e.target.value })} />
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            <Phone size={14} /> Phone
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                            <MapPin size={14} className="inline mr-1" /> Branch / Location
                         </label>
-                        <input
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
-                            value={formData.phone || ''}
-                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                        />
+                        <input className="input-divine" placeholder="e.g. Pune" value={form.branch} onChange={e => setForm({ ...form, branch: e.target.value })} />
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Initiation Status</label>
-                        <select
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none bg-white"
-                            value={formData.status || 'Uninitiated'}
-                            onChange={e => setFormData({ ...formData, status: e.target.value })}
-                        >
-                            <option value="Uninitiated">Uninitiated</option>
-                            <option value="Aspiring">Aspiring</option>
-                            <option value="Shelter">Shelter</option>
-                            <option value="First Initiated">First Initiated</option>
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                            <BookOpen size={14} className="inline mr-1" /> Category
+                        </label>
+                        <select className="select-divine" value={form.category} onChange={e => setForm({ ...form, category: e.target.value as StudentCategory })}>
+                            {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                         </select>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            Date of Birth
-                        </label>
-                        <input
-                            type="date"
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
-                            value={formData.dob || ''}
-                            onChange={e => setFormData({ ...formData, dob: e.target.value })}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            Native Place
-                        </label>
-                        <input
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
-                            value={formData.nativePlace || ''}
-                            onChange={e => setFormData({ ...formData, nativePlace: e.target.value })}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            Year of Study
-                        </label>
-                        <input
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
-                            placeholder="e.g. 2nd Year"
-                            value={formData.yearOfStudy || ''}
-                            onChange={e => setFormData({ ...formData, yearOfStudy: e.target.value })}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            Branch / Department
-                        </label>
-                        <input
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
-                            placeholder="e.g. Engineering"
-                            value={formData.branch || ''}
-                            onChange={e => setFormData({ ...formData, branch: e.target.value })}
-                        />
-                    </div>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <MapPin size={14} /> Current Address
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                        <MapPin size={14} className="inline mr-1" /> Native Place
                     </label>
-                    <textarea
-                        rows={2}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none resize-none"
-                        value={formData.currentAddress || ''}
-                        onChange={e => setFormData({ ...formData, currentAddress: e.target.value })}
-                    />
+                    <input className="input-divine" placeholder="Where are you from?" value={form.nativePlace} onChange={e => setForm({ ...form, nativePlace: e.target.value })} />
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <Heart size={14} /> Hobbies & Interests
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                        <Heart size={14} className="inline mr-1" /> Spiritual Goals
                     </label>
-                    <input
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none"
-                        value={formData.hobbies || ''}
-                        onChange={e => setFormData({ ...formData, hobbies: e.target.value })}
-                    />
+                    <textarea className="textarea-divine" placeholder="What are your spiritual aspirations?" value={form.goals} onChange={e => setForm({ ...form, goals: e.target.value })} rows={3} />
                 </div>
 
-                <div className="flex justify-end pt-4">
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="btn-divine px-8 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
-                    >
-                        {saving ? 'Saving...' : <><Save size={20} /> Save Changes</>}
-                    </button>
-                </div>
+                <button type="submit" disabled={saving} className="btn-divine w-full">
+                    {saving ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : saved ? (
+                        <><Save size={16} /> Saved ✓</>
+                    ) : (
+                        <><Save size={16} /> Save Profile</>
+                    )}
+                </button>
             </form>
         </div>
     );

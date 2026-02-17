@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
@@ -20,20 +19,24 @@ const DevoteeManagement = lazy(() => import('./components/DevoteeManagement'));
 const ChantingCounter = lazy(() => import('./components/ChantingCounter'));
 const AdminQuizManager = lazy(() => import('./components/quiz/AdminQuizManager'));
 const UserQuizTaker = lazy(() => import('./components/quiz/UserQuizTaker'));
-const UserQuizList = lazy(() => import('./components/quiz/UserQuizList')); // Restored
+const UserQuizList = lazy(() => import('./components/quiz/UserQuizList'));
 const Onboarding = lazy(() => import('./components/Onboarding'));
 const MyProfile = lazy(() => import('./components/MyProfile'));
 
-// Restored LoadingSpinner
 const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-[#FFF9F0] text-[#0F766E] font-serif text-xl animate-pulse">
-    Loading ISKCON Portal...
+  <div className="min-h-screen flex items-center justify-center bg-[#FFFAF3]">
+    <div className="text-center">
+      <div className="w-10 h-10 border-3 border-divine-200 border-t-divine-600 rounded-full animate-spin mx-auto mb-4" />
+      <p className="text-sm text-divine-700 font-serif font-medium animate-pulse">Gita Life</p>
+    </div>
   </div>
 );
 
-import { App as CapacitorApp } from '@capacitor/app';
-
-// ... imports
+// Deep link support for Capacitor
+let CapacitorApp: any = null;
+try {
+  CapacitorApp = require('@capacitor/app').App;
+} catch { }
 
 const AppContent: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -43,17 +46,15 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     // Handle Deep Links (Google Login)
-    CapacitorApp.addListener('appUrlOpen', (data) => {
-      // supabase.auth.getSession() will pick up the hash from the URL automatically
-      // but we might need to manually pass it if Supabase doesn't catch it
-      // For now, let's rely on Supabase's auto-detection on cold start or window.location
-      console.log('App opened with URL:', data.url);
-    });
+    if (CapacitorApp) {
+      CapacitorApp.addListener('appUrlOpen', (data: any) => {
+        console.log('App opened with URL:', data.url);
+      });
+    }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user?.email) {
-        // Keep loading true while fetching role
         fetchUserRole(session.user.email);
       } else {
         setLoading(false);
@@ -63,7 +64,7 @@ const AppContent: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user?.email) {
-        setLoading(true); // PREVENT FLASH: Start loading again when session changes
+        setLoading(true);
         fetchUserRole(session.user.email);
       } else {
         setUserRole(null);
@@ -74,7 +75,7 @@ const AppContent: React.FC = () => {
 
     return () => {
       subscription.unsubscribe();
-      CapacitorApp.removeAllListeners();
+      if (CapacitorApp) CapacitorApp.removeAllListeners();
     };
   }, []);
 
@@ -85,7 +86,7 @@ const AppContent: React.FC = () => {
         setUserRole(profile.role || 'student');
         setProfileExists(true);
       } else {
-        setUserRole('student'); // Default role, but flow will redirect to onboarding
+        setUserRole('student');
         setProfileExists(false);
       }
     } catch (error) {
@@ -109,24 +110,19 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Force Onboarding if no profile (and not already on onboarding page)
-  if (profileExists === false && window.location.hash !== '#/onboarding') {
-    // small hack to check hash because Navigate might loop if we are not careful
-  }
-
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
-        {/* Onboarding Route (Open to auth users without profile) */}
+        {/* Onboarding */}
         <Route path="/onboarding" element={profileExists ? <Navigate to="/" /> : <Onboarding />} />
 
-        {/* Redirect Root based on Role & Profile Status */}
+        {/* Root Redirect */}
         <Route path="/" element={
           !profileExists ? <Navigate to="/onboarding" replace /> :
             <Navigate to={userRole === 'admin' ? "/admin" : "/app"} replace />
         } />
 
-        {/* ADMIN ROUTES */}
+        {/* Admin Routes */}
         <Route element={<RoleGuard allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
@@ -139,7 +135,7 @@ const AppContent: React.FC = () => {
           </Route>
         </Route>
 
-        {/* USER ROUTES */}
+        {/* User Routes */}
         <Route element={<RoleGuard allowedRoles={['student', 'mentor']} />}>
           <Route path="/app" element={<UserLayout />}>
             <Route index element={<Dashboard />} />
@@ -155,8 +151,7 @@ const AppContent: React.FC = () => {
           </Route>
         </Route>
 
-        {/* FALLBACK */}
-        <Route path="/unauthorized" element={<div className="p-10 text-center">Unauthorized Access</div>} />
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
